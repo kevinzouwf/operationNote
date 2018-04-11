@@ -1,0 +1,11 @@
+jsonrpc: "2.0"
+method: "template.get"
+params:
+  output:
+    - templateid
+    - host
+  filter:
+    host:
+      - "Template OS Linux"
+auth: fds
+id: 3

@@ -1,0 +1,28 @@
+too many connections 
+
+如果max_connections 为500-1000，在大多数场合是可以的，一味的增大，仅会治标不治本，反而还会浪费不必要的内存。合理的调整 wait_timeout 默认是28800秒，一般可以设为100秒。
+这是因为，客户端连到到server处理完相应的操作后，要等到28800秒以后才释放内存，如果mysql有大量的闲置连接，不仅会白白消耗内存，而且连接不停累加的话最终会造成too many connections这样的错误
+
+为了缓解压力，mysql重启完数据库后，需要手动执行语句，来把热数据加载到InnoDB_Buffer_Pool缓冲池里预热
+
+select count(*) from User;
+select count(*) from Password;
+
+5.6 版本可以把Buffer_Pool缓冲池在mysql showdown 时保存到本地磁盘
+
+innodb_buffer_pool_dump_at_shutdown=1
+innodb_buffer_pool_dump_now=1 (手工dump)
+innodb_buffer_poll_load_at_startup=1
+innodb_buffer_pool_load_now=1 (手工恢复）
+
+尽量使用连接查询来代替子查询，连接查询不需要建立临时表，其速度比子查询要快
+
+子查询是，mysql需要先为内层查询语句的查询结果建立一个临时表，然后外层查询语句才能在临时表中查询记录，查询完毕后，还需要撤销这个临时表。
+
+分析binlog日志
+
+mysqlbinlog --no-defaults --base64-output=decode-rows -v -v mysql-bin.000001 |awk '/###/{if($0~/UPDATE|INSERT|DELETE/)count[$2" "$NF]++} END{for (i in count) print i,"\t",count[i]}'|column -t |sort -k3nr |more
+
+三种日志格式 Statement, Row, Mixed
+
+`

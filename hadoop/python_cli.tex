@@ -1,0 +1,19 @@
+
+In [6]: client=Client('http://192.168.56.21:50070',root='/user')     
+
+In [7]: client.list('.')
+Out[7]: [u'yulei']
+
+In [8]: client.list('yulei')
+Out[8]: [u'input']
+
+In [9]: client.list('yulei/input')
+Out[9]: 
+[u'capacity-scheduler.xml',
+ u'core-site.xml',
+ u'hadoop-policy.xml',
+ u'hdfs-site.xml',
+ u'httpfs-site.xml',
+ u'kms-acls.xml',
+ u'kms-site.xml',
+ u'yarn-site.xml']

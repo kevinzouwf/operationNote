@@ -1,0 +1,4 @@
+dn: cn=TestUser1,ou=people,dc=linuxcbt,dc=internal
+changetype: modify
+replace: departmentNumber
+departmentNumber: Sales

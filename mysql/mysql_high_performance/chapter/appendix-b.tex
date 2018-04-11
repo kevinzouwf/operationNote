@@ -1,0 +1,71 @@
+
+show variables ; 查看系统变量
+mysqladmin varables  也可能得到
+也可以通过查看INFOMATION_SCHEMA库来获取这些信
+
+show status 命令显示每个服务器的名字和值。状态变量是只读的，
+mysqladmin extended-status 也可以查到这些变量。
+INFORMATION_SCHEMA.GLOBAL_STATUS
+INFORMATION_SCHEMA.SESSION_STATUS
+
+其中有上百个状态变量，大部分要么是计数器，要么包含某些状态指标的当前值。每次mysql做一些事情都会导致计数器的增长，比如开始化一个全表扫描
+
+变量采用无符号整型存储，他们在32位编译上用4字节，而64位环境用8个字节，当达到最大值后会重新从0开始。
+
+查看服务器工作负载，一般可以查看Select_*, Handler_*变量，也可以使用innotop，在command summary模式下查看更简单。
+
+mysqladmin extended -r -i60|grep Handler_ 
+
+查一组变量 
+
+
+dev.mysql.com/doc/en/mysqld-option-tables.html
+
+可以使用下面简单查询查看一组变量的当前值，上一次查询的值，以及他们的差值 可以使用pt-mext工具。
+http://code.openark.org/blog/mysql/mysql-global-status-difference-using-single-query
+
+SELECT STRAIGHT_JOIN
+   LOWER(gs0.VARIABLE_NAME) AS variable_name,
+   gs0.VARIABLE_VALUE AS variable_value_0,
+   gs1.VARIABLE_VALUE AS variable_value_1,
+   (gs1.VARIABLE_VALUE - gs0.VARIABLE_VALUE) AS variable_value_diff,
+   (gs1.VARIABLE_VALUE - gs0.VARIABLE_VALUE) / 10 AS variable_value_psec,
+   (gs1.VARIABLE_VALUE - gs0.VARIABLE_VALUE) * 60 / 10 AS
+variable_value_pminute
+FROM
+   (
+     SELECT
+       VARIABLE_NAME,
+       VARIABLE_VALUE
+     FROM
+       INFORMATION_SCHEMA.GLOBAL_STATUS
+     UNION ALL
+     SELECT
+       '',
+       SLEEP(10)
+     FROM DUAL
+   ) AS gs0
+   JOIN (
+     SELECT 
+       VARIABLE_NAME,
+       VARIABLE_VALUE
+     FROM 
+       INFORMATION_SCHEMA.GLOBAL_STATUS
+   ) gs1 USING (VARIABLE_NAME)
+WHERE
+   gs1.VARIABLE_VALUE != gs0.VARIABLE_VALUE
+
+线程连接统计
+Connection, Max_used_connections, threads_connected
+Aborted_clients, Aborted_connects, Bytes_received, Bytes_sent
+Slow_launch_threads, Threads_cached, Threads_created, Threads_running
+
+Aborted_connects  不为0，可能意味着网络有问题，或者某人尝试连接但是失败
+Aborted_clients 如果这个值增长，一般意味着有一个应用错误。比如程序未能正确关闭mysql连接。
+
+
+二进制日志
+Binglog_cache_use  Binlog_cache_dis_use显示二进制日志缓存中有多少事务被存储过，以及多少事务因为超过二进制缓存而必须存储到一个临时文件中。
+Binglog_stmt_cache_use  Binlog_stmt_cache_dis_use显示非事务语句相应的度量值
+
+

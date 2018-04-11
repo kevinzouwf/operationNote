@@ -1,0 +1,7 @@
+[Private_Base]
+name=Private_Base
+baseurl=http://{{baseurl1}}/base/$releasever/$basearch
+        http://{{baseurl2}}/base/$releasever/$basearch
+enabled=1
+gpgcheck=0
+

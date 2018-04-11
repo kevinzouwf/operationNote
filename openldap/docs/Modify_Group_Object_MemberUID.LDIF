@@ -1,0 +1,4 @@
+dn: cn=projectx,ou=Group,dc=linuxcbt,dc=internal
+changetype: modify
+add: memberUid
+memberUid: projuser1

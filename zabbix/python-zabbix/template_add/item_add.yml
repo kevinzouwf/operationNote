@@ -1,0 +1,5 @@
+name: "nginx_reading"
+key_: "linux_status[nginx_status,80,reading]"
+type: 0
+value_type: 3
+data_type: 0

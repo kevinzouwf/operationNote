@@ -1,0 +1,6 @@
+#Build the root node
+dn: dc=linuxcbt,dc=internal
+dc: linuxcbt
+objectClass: dcObject
+objectClass: organizationalUnit
+ou: LINUXCBTINTERNAL

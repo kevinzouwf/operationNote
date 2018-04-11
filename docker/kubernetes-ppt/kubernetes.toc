@@ -1,0 +1,5 @@
+\beamer@sectionintoc {2}{ 介绍}{3}{0}{1}
+\beamer@sectionintoc {3}{kubernetes master}{4}{0}{2}
+\beamer@sectionintoc {4}{kubernetes node}{5}{0}{3}
+\beamer@sectionintoc {5}{pod and replication controllers}{6}{0}{4}
+\beamer@sectionintoc {6}{service}{7}{0}{5}

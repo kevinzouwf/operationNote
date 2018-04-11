@@ -1,0 +1,89 @@
+#! /bin/sh
+#
+# chkconfig: - 55 45
+# description: The amoebad daemon is a network memory cache service.
+# processname: amoebad
+# config: /etc/sysconfig/amoebad
+# pidfile: /var/run/amoebad/amoebad.pid
+# author: Jack Brain
+# Standard LSB functions
+#. /lib/lsb/init-functions
+
+# Source function library.
+. /etc/init.d/functions
+
+PORT=11211
+USER=root
+MAXCONN=2048
+CACHESIZE=128
+OPTIONS=''
+
+if [ -f /etc/sysconfig/amoebad ];then
+  . /etc/sysconfig/amoebad
+fi
+
+# Check that networking is up.
+. /etc/sysconfig/network
+
+if [ "$NETWORKING" = "no" ]
+then
+  exit 0
+fi
+
+retval=0
+prog="amoebad"
+pidfile="${PIDFILE-/usr/local/amoebad/pid/amoebad.pid}"
+lockfile="${LOCKFILE-/usr/local/amoebad/pid/amoebad.lock}"
+
+start () {
+  echo -n "Starting $prog: "
+  # Ensure that /var/run/amoebad has proper permissions
+  if [ "`stat -c %U /usr/local/amoebad`" != "$USER" ]; then
+    chown $USER /usr/local/amoebad
+  fi
+  daemon /usr/local/amoebad/bin/amoebad -d -p $PORT -u $USER -m $CACHESIZE -c $MAXCONN -P ${pidfile} $OPTIONS
+  retval=$?
+  echo 
+  [ $retval -eq 0 ] && touch ${lockfile}
+
+}
+
+stop () {
+  echo -n "Stopping $prog: "
+  killproc -p ${pidfile} amoebad
+  retval=$?
+  echo
+  [ $retval -eq 0 ] && rm -f $lockfile
+
+}
+
+restart () {
+  stop
+  start
+}
+
+# See how we were called.
+case "$1" in
+  start)
+    start
+    ;;
+  stop)
+    stop
+    ;;
+  status)
+    status -p ${pidfile} amoebad
+    retval=$?
+    ;;
+  restart|reload|force-reload)
+    restart
+    ;;
+  condrestart|try-restart)
+    [ -f ${lockfile} ] && restart || :
+    ;;
+  *)
+    echo "Usage: $0 {start|stop|status|restart|reload|force-reload|condrestart|try-restart}"
+    retval=2
+    ;;
+esac
+
+exit $retval

@@ -1,0 +1,12 @@
+#Add First User
+#ldapmodify -D "cn=Manager,dc=linuxcbt,dc=internal" -x -a -W -f # LinuxCBT1, people, linuxcbt.internal
+dn: cn=LinuxCBT1,ou=people,dc=linuxcbt,dc=internal
+changetype: modify
+replace: telephoneNumber
+telephoneNumber: 203-543-8979
+-
+replace: departmentNumber
+departmentNumber: Administration
+-
+replace: mail
+mail: 1@2.com

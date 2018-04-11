@@ -1,0 +1,18 @@
+$ORIGIN .
+$TTL 3600       ; 1 hour
+www.gsandow.com                  IN SOA  ns1.www.gsandow.com. admin.www.gsandow.com. (
+                                2001       ; serial
+                                900        ; refresh (15 minutes)
+                                600        ; retry (10 minutes)
+                                86400      ; expire (1 day)
+                                3600       ; minimum (1 hour)
+                                )   
+;name servers - NS records
+                       NS      ns1.www.gsandow.com.
+                       NS      ns2.www.gsandow.com.
+$ORIGIN www.gsandow.com.
+ns1           A     192.168.56.111
+ns2           A     192.168.56.112
+host1         A     192.168.56.100
+host2         A     192.168.56.101
+

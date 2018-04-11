@@ -1,0 +1,6 @@
+[test02]
+name=Server
+baseurl=http://10.51.48.249
+enabled=1
+gpgcheck=0
+

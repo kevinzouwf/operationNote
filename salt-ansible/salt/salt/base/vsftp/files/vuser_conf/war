@@ -1,0 +1,4 @@
+local_root=/usr/local/tomcat
+#local_umask=002
+#anon_umask=002
+guest_username=nginx

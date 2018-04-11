@@ -1,0 +1,66 @@
+在Centos7下 GPU P40
+获取root权限 
+sudo su root
+
+一、安装docker
+sudo yum install docker
+
+
+二、安装nvidia-docker
+	1、如果之前安装过nvidia-docker 1.0需要先卸载
+	docker volume ls -q -f driver=nvidia-docker | xargs -r -I{} -n1 docker ps -q -a -f volume={} | xargs -r docker rm -f
+	sudo yum remove nvidia-docker
+	2、添加Package Repository
+	curl -s -L https://nvidia.github.io/nvidia-docker/centos7/x86_64/nvidia-docker.repo | sudo tee /etc/yum.repos.d/nvidia-docker.repo
+	3、使用yum安装nvidia-docker
+	sudo yum install -y nvidia-docker2
+	4、刷新docker的设置
+	sudo pkill -SIGHUP dockerd
+
+
+三、安装CUDA
+	1、安装lspci
+	sudo yum install pciutils
+	2、查看显示设备
+	sudo lspci | grep NVIDIA
+	3D controller: NVIDIA Corporation GK210GL [Tesla K80] 表示识别为K80
+	3D controller: NVIDIA Corporation Device 1b38 (rev a1) 表示为P40
+	3、获取cuda8.0网络源并配置
+	wget http://developer.download.nvidia.com/compute/cuda/repos/rhel7/x86_64/cuda-repo-rhel7-8.0.61-1.x86_64.rpm
+	rpm -Uvh cuda-repo-rhel7-8.0.61-1.x86_64.rpm
+	4、安装kernel-devel包（驱动需要）
+	wget http://vault.centos.org/7.0.1406/updates/x86_64/Packages/kernel-devel-3.10.0-123.4.4.el7.x86_64.rpm
+	wget http://vault.centos.org/7.0.1406/updates/x86_64/Packages/kernel-headers-3.10.0-123.4.4.el7.x86_64.rpm
+	rpm -Uvh kernel-devel-3.10.0-123.4.4.el7.x86_64.rpm
+	rpm -Uvh kernel-headers-3.10.0-123.4.4.el7.x86_64.rpm
+	5、安装cuda8.0
+	yum install cuda-8-0
+	如果安装成功使用sudo nvidia-smi即可看到GPU状态
+
+
+四、安装cudnn（可选，不安装也可以正常使用TensorFlow）
+	1、下载cudnn5.0
+	https://developer.nvidia.com/rdp/cudnn-archive
+	选择cudnn5.0 for cuda8.0,进一步选择cuDNN v5 Library for Linux
+	2、解压缩cudnn 得到cuda目录
+	tar -xvf cudnn-8.0-linux-x64-v5.0-ga.tgz
+	cd cuda
+	3、将cudnn中的文件复制到cuda中
+	sudo cp -P lib64/* /usr/local/cuda/lib64/ 
+	sudo cp -P include/* /usr/local/cuda/include/
+	sudo chmod a+r /usr/local/cuda/lib64/libcudnn*
+
+
+五、使用docker安装TensorFlow
+	1、拉取镜像
+	nvidia-docker pull daocloud.io/daocloud/tensorflow:latest-gpu-py3
+	待镜像拉取完毕，比较耗时，这里使用了daocloud的国内hub，如果使用官方的docker hub极慢
+	2、启动容器
+	sudo nvidia-docker run -p 8888:8888 -v /data/docker_notebook:/notebooks -d daocloud.io/daocloud/tensorflow:latest-gpu-py3
+	-p指定端口映射，-v 为挂载本地目录，实现宿主机与docker容器间文件共享，-d 为后台启动
+	3、登陆jupyter notebook
+	由于采用后台启动，不知道jupyter notebook产生的token
+	1）使用docker ps查看当前运行的容器，得到容器的id和容器的name
+	2）因此先登陆docker容器 nvidia-docker exec -it [容器的name或容器id] /bin/bash， 进入到容器的命令行界面
+	3）使用jupyter notebook list 命令得到正在运行的notebook并获取token
+	4）打开浏览器输入 目标机器ip:8888 在password or token 中输入3）中得到的token

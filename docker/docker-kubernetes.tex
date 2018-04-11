@@ -1,0 +1,714 @@
+https://github.com/webdevops/Dockerfile.git
+\chapter{docker基础到kubernetes集群}
+
+\section{docker基础}
+
+在gpu-docker使用
+https://github.com/NVIDIA/nvidia-docker
+
+\section{dockerfile 使用总结}
+
+使用dockerfile 心得体会
+
+\subsection{copy 和 add的区别}
+
+COPY <src> <dest>
+
+add 和 copy 都会把 src下面的复制到镜像中。例如 \textbf{COPY data /tmp } 便会把data下面的文件copy到/tmp下，
+如果想把整个目录都复制过去那么就必须写成\textbf{COPY data /tmp/data } 这里copy和 add是一样的
+
+虽然他们两功能非常像，在官方文档中的best practices for writing dockerfile时还是推荐使用copy
+
+Although ADD and COPY are functionally similar, generally speaking, COPY is preferred. That’s because it’s more transparent than ADD. COPY only supports the basic copying of local files into the container, while ADD has some features (like local-only tar extraction and remote URL support) that are not immediately obvious. Consequently, the best use for ADD is local tar file auto-extraction into the image,
+
+Because image size matters, using ADD to fetch packages from remote URLs is strongly discouraged; you should use curl or wget instead. That way you can delete the files you no longer need after they’ve been extracted and you won’t have to add another layer in your image.
+
+
+
+\subsection{ENTRYPOINT 和 CMD}
+
+docker并不会快照运行的进程，所以通过RUN命令运行的命令仅在 \textbf{docker build} 阶段的时候运行
+如果需要在容器启动的时候运行服务需要使用ENTRYPOINT 和 CMD 来指定，并且这两命令都是放在dockerfile
+的最后
+
+并且 docker需要让进程一直处于running状态（前台，类似tail -F），也就是说不能运行在后台模式，不然docker会exit,并不会运行
+除非特殊需求之外，一般一个容器只运行一个服务，也有时候需要运行多个服务，这时候可以有两种方法来解决，一是把两个服务
+写到同一个shell里，然后运行，另一种便是使用supervisord,supervisord看起来是比较重的。
+
+shell 示例
+
+%\lstinputlisting{./scripts/run.sh}
+
+supervisord 示例
+
+\begin{lstlisting}[language=bash]
+FROM ubuntu:latest
+RUN apt-get update && apt-get install -y supervisor
+RUN mkdir -p /var/log/supervisor
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY my_first_process my_first_process
+COPY my_second_process my_second_process
+CMD ["/usr/bin/supervisord"]
+\end{lstlisting}
+
+ENTRYPOINT 会把docker run IMAGE 之外的所以参数都传给 ENTRYPOINT 执行的命令中。CMD则是完全覆盖
+当ENTRYPOINT和CMD同时存在的时候 CMD会做为参数传给ENTRYPOINT。在docker run的时候如果有参数转进来，可以理解为覆盖CMD
+然后把它做为参数传给ENTRYPOINT.
+例如
+
+\begin{lstlisting}[language=bash]
+[root@ns1 test]# cat Dockerfile
+FROM registry.gsandow.com:5043/centos
+MAINTAINER from www.gsandow.com by sandow <j.k.yulei@gmail.com>
+
+#ENTRYPOINT ["echo","entrypoit"]
+CMD ["echo","cmd"]
+[root@ns1 test]# docker build -t test .
+Sending build context to Docker daemon  8.192kB
+Step 1/3 : FROM registry.gsandow.com:5043/centos
+ ---> 36540f359ca3
+Step 2/3 : MAINTAINER from www.gsandow.com by sandow <j.k.yulei@gmail.com>
+ ---> Using cache
+ ---> c123904bd244
+Step 3/3 : CMD echo cmd
+ ---> Running in ea01464d732a
+ ---> 3bcdf60c6bda
+Removing intermediate container ea01464d732a
+Successfully built 3bcdf60c6bda
+Successfully tagged test:latest
+[root@ns1 test]# docker run --rm test
+cmd
+[root@ns1 test]# docker run --rm test aaa
+caused "exec: \"aaa\": executable file not found in \$PATH"
+[root@ns1 test]# docker run --rm test echo aaa
+aaa
+[root@ns1 test]# cat Dockerfile
+FROM registry.gsandow.com:5043/centos
+MAINTAINER from www.gsandow.com by sandow <j.k.yulei@gmail.com>
+
+ENTRYPOINT ["echo","entrypoit"]
+CMD ["echo","cmd"]
+[root@ns1 test]# docker build -t test .
+[root@ns1 test]# docker run --rm test
+entrypoit echo cmd
+[root@ns1 test]# docker run --rm test echo 3
+entrypoit echo 3
+[root@ns1 test]# docker run --rm test cmd
+entrypoit cmd
+\end{lstlisting}
+
+\noindent
+Both CMD and ENTRYPOINT instructions define what command gets executed when running a container. There are few rules that describe their co-operation.
+
+\smallskip
+\begin{itemize}
+	\item \small{Dockerfile should specify at least one of CMD or ENTRYPOINT commands.}
+	\item \small{ENTRYPOINT should be defined when using the container as an executable.}
+	\item \small{CMD should be used as a way of defining default arguments for an ENTRYPOINT command or for executing an ad-hoc command in a container.}
+	\item \small{CMD will be overridden when running the container with alternative arguments.}
+
+\end{itemize}
+
+\noindent
+The table below shows what command is executed for different ENTRYPOINT / CMD combinations:
+
+\noindent
+\begin{table}[h]
+\begin{tabular*}{\textwidth}{|p{2.8cm}|p{3cm}|p{4cm}|p{5cm}|}
+%\begin{tabular*}{0.7\paperwidth}{|l|l|l|l|}
+	\hline
+	&	No ENTRYPOINT &	ENTRYPOINT exec_entry p1_entry	& ENTRYPOINT [“exec_entry”, “p1_entry”] \\
+	\hline
+No CMD	&    error, not allowed & /bin/sh -c exec_entry p1_entry & exec_entry p1_entry \\
+	\hline
+CMD [“exec_cmd”, “p1_cmd”] & exec_cmd p1_cmd & /bin/sh -c exec_entry p1_entry & exec_entry p1_entry exec_cmd p1_cmd\\
+	\hline
+CMD [“p1_cmd”, “p2_cmd”] & p1_cmd p2_cmd & /bin/sh -c exec_entry p1_entry & exec_entry p1_entry p1_cmd p2_cmd \\
+	\hline
+CMD exec_cmd p1_cmd & /bin/sh -c exec_cmd p1_cmd & /bin/sh -c exec_entry p1_entry & exec_entry p1_entry /bin/sh -c exec_cmd p1_cmd \\
+	\hline
+
+\end{tabular*}
+\end{table}
+
+postgresql 官方例中ENTRYPOINT是这个样子的
+
+\begin{lstlisting}
+#!/bin/bash
+set -e
+
+if [ "$1" = 'postgres' ]; then
+    chown -R postgres "$PGDATA"
+
+    if [ -z "$(ls -A "$PGDATA")" ]; then
+        gosu postgres initdb
+    fi
+
+    exec gosu postgres "$@"
+fi
+
+exec "$@"
+\end{lstlisting}
+
+	exec
+	
+	http://xstarcd.github.io/wiki/shell/exec_redirect.html
+
+su,sudo 经常会需要TTY和信号转发行为，它们在设置和使用上比较。
+gosu，便是在特定的用户下运行特定的程序然后退出管道。https://github.com/tianon/gosu
+
+\section{docker 使用}
+
+一般启动方式，以gitlab为例
+
+\begin{lstlisting}[language=bash]
+sudo docker run --detach \
+    --hostname gitlab.example.com \
+    --publish 443:443 --publish 80:80 --publish 22:22 \
+    --name gitlab \
+    --restart always \
+    --volume /srv/gitlab/config:/etc/gitlab \
+    --volume /srv/gitlab/logs:/var/log/gitlab \
+    --volume /srv/gitlab/data:/var/opt/gitlab \
+    gitlab/gitlab-ce:latest
+\end{lstlisting}
+
+\section{docker compose}
+
+\begin{lstlisting}
+web:
+  image: 'gitlab/gitlab-ce:latest'
+  restart: always
+  hostname: 'gitlab.example.com'
+  environment:
+    GITLAB_OMNIBUS_CONFIG: |
+      external_url 'http://gitlab.example.com:9090'
+      gitlab_rails['gitlab_shell_ssh_port'] = 2224
+  ports:
+    - '9090:9090'
+    - '2224:22'
+  volumes:
+    - '/srv/gitlab/config:/etc/gitlab'
+    - '/srv/gitlab/logs:/var/log/gitlab'
+    - '/srv/gitlab/data:/var/opt/gitlab'
+\end{lstlisting}
+
+docker-compose up -d
+
+
+\section{参考链接}
+
+\href{https://docs.docker.com/engine/userguide/eng-image/dockerfile_best-practices/}{dockerfile_best-practices}
+\href{https://stackoverflow.com/questions/21553353/what-is-the-difference-between-cmd-and-entrypoint-in-a-dockerfile}{what-is-the-difference-between-cmd-and-entrypoint-in-a-dockerfile}
+\href{https://stackoverflow.com/questions/24958140/what-is-the-difference-between-the-copy-and-add-commands-in-a-dockerfile}{what-is-the-difference-between-the-copy-and-add-commands-in-a-dockerfile}
+\href{https://docs.docker.com/engine/admin/multi-service_container/}{ulti-service_container}
+
+
+\section{kubernetes 组件及基础概念}
+
+\href{ https://www.youtube.com/watch?v=_vHTaIJm9uY&list=PLF3s2WICJlqOiymMaTLjwwHz-MSVbtJPQ}{kubernetes 基础介绍视频链接}
+
+\subsection{kube-master}
+
+\begin{itemize}
+
+	\item Kubernetes is highly api centered. The Kubernetes API server validates and configures data for the api objects which include pods, services, replicationcontrollers, and others. The API Server services REST operations and provides the frontend to the cluster’s shared state through which all other components interact.
+
+        \item The Kubernetes scheduler is a policy-rich, topology-aware, workload-specific function that significantly impacts availability, performance, and capacity. The scheduler needs to take into account individual and collective resource requirements, quality of service requirements, hardware/software/policy constraints, affinity and anti-affinity specifications, data locality, inter-workload interference, deadlines, and so on. Workload-specific requirements will be exposed through the API as necessary.
+
+        \item The Kubernetes controller manager is a daemon that embeds the core control loops shipped with Kubernetes. In applications of robotics and automation, a control loop is a non-terminating loop that regulates the state of the system. In Kubernetes, a controller is a control loop that watches the shared state of the cluster through the apiserver and makes changes attempting to move the current state towards the desired state. Examples of controllers that ship with Kubernetes today are the replication controller, endpoints controller, namespace controller, and serviceaccounts controller
+
+\end{itemize}
+
+The Kubernetes network proxy runs on each node. This reflects services as defined in the Kubernetes API on each node and can do simple TCP,UDP stream forwarding or round robin TCP,UDP forwarding across a set of backends. Service cluster ips and ports are currently found through Docker-links-compatible environment variables specifying ports opened by the service proxy. There is an optional addon that provides cluster DNS for these cluster IPs. The user must create a service with the apiserver API to configure the proxy.
+ 
+The kubelet is the primary “node agent” that runs on each node. The kubelet works in terms of a PodSpec. A PodSpec is a YAML or JSON object that describes a pod. The kubelet takes a set of PodSpecs that are provided through various mechanisms (primarily through the apiserver) and ensures that the containers described in those PodSpecs are running and healthy. The kubelet doesn’t manage containers which were not created by Kubernetes.
+
+Other than from an PodSpec from the apiserver, there are three ways that a container manifest can be provided to the Kubelet.
+File: Path passed as a flag on the command line. Files under this path will be monitored periodically for updates. The monitoring period is 20s by default and is configurable via a flag.
+HTTP endpoint: HTTP endpoint passed as a parameter on the command line. This endpoint is checked every 20 seconds (also configurable with a flag).
+HTTP server: The kubelet can also listen for HTTP and respond to a simple API (underspec’d currently) to submit a new manifest.
+
+fluentd is the component which is basically responsible for managing the logs and talking to the central locking mechanism
+
+\subsection{kube-node}
+
+
+
+\href{https://github.com/kubernetes/kops}{kops   安装，升级，管理工具}
+
+
+flanneld
+
+\begin{lstlisting}
+/usr/lib/sysctl.d/00-system.conf
+net.bridge.bridge-nf-call-iptables=1
+net.bridge.bridge-nf-call-ip6tables=1
+sysctl -w net.ipv4.ip_forward=1
+sysctl -w net.bridge.bridge-nf-call-ip6tables=1
+sysctl -w net.bridge.bridge-nf-call-iptables=1
+\end{lstlisting}
+
+0down vote	What parameters did you provide for kubeadm?
+	If you want to use flannel as the pod network, specify --pod-network-cidr 10.244.0.0/16 if you’re using the daemonset manifest below. However, please note that this is not required for any other networks besides Flannel
+	Execute these commands on every node:
+
+
+
+
+
+\subsection{ pod}
+
+pod is a group of one or more containers that are always co-located and
+co-scheduled that share the context, containers in a pod share the same
+IP address,ports,hostname, and storage. modeled like a virtual machine:
+each container represnets one process
+tightly coupled with other containers in the same pod
+
+pod are scheduled in nodes, fundamental unit of deployment in kubernetes.
+
+use cases for pod
+
+
+
+\subsection{Replication Controller}
+
+Ensures that a pod or homogeneous set of pods are always up and available
+Always maintains desired number of pods
+if there are exess pod, they get killed
+new pods are launched when they fail, get deleted, or terminated
+
+creating a replication controller with a count of 1 ensoures that a pod 
+is always availble
+RC and Pods are associated througth lables
+
+\subsection{replica set}
+
+replica set is the advancement to replication controller
+replica sets are the nest generation Replication controller
+ensures specified numbers of pods are always running
+Pods are replaced by Replica Sets when a failure occurs
+lables and selectors are useed for associating pods with replica set
+usually combined with pods when defining the deployment
+
+
+如果定义的pod，删除或者终止后不会重建，定义成RC后，删除或者终结后还会重建一个
+
+kubectl scale rc web --replicas=20  
+也可以这样来定制RC
+
+
+separate statefull containers and stateless containers because stateful containers have very
+stringent requirements for example i might want to have an SSD based storage that is mounted
+as a volume 
+
+
+\subsection{ Service}
+a Service is an abstraction of a logical set of Pods defined by a policy
+it acts as the intermediary for pods to talk to each other
+selectors are used for accesing all the pods that match a specific lable
+service is an object in kubernetes - similar to pods and RCs
+each Service exposes one of more ports and targetPorts: port will expose to its consumers
+the targetPorts is how it is going to route the traffic to the destination pods
+The targetPort is mapped to the port exposed by matching Pods
+Kubernetes Services Support TCP and UDP portocols
+
+
+kubectl create -f pod.yml -f rc.yml 
+kubectl create -f svc.yml
+
+kubectl apply -f svc.yml
+
+
+red, green, blue 可以分别定义开发，测试，正式环境，然后通过svc提供服务，只需要改变select便可以轻松切到某个环境
+
+\section{kubectl高级用法}
+
+kubectl 来获取特殊的值
+
+\begin{lstlisting}
+
+获取node name
+ kubectl get nodes -o jsonpath='{range.items[*].metadata}{.name} {end}'
+
+获取node ip
+kubectl get nodes -o jsonpath='{range .items[*].status.addresses[?(@.type=="ExternalIP")]}{.address} {end}'
+
+ 一：get 过滤及格式化输出
+kubectl get pods --all-namespaces -o jsonpath="{..image}"
+kubectl get pods --all-namespaces -o jsonpath="{.items[*].spec.containers[*].image}"
+
+    * .items[*]: for each returned value
+    * .spec: get the spec
+    * .containers[*]: for each container
+    * .image: get the image
+上面的一般都不会格式化输出，需要使用range来结合使用
+kubectl get pods --all-namespaces -o=jsonpath='{range .items[*]}{"\n"}{.metadata.name}{":\t"}{range .spec.containers[*]}{.image}{", "}{end}{end}' 
+
+Kubectl run my-web —image=nginx —port=80
+Kubectl expose deployment my-web —target-port=80 —type=NodePort
+
+Kubectl get svc my-web -o to-templates=‘{{(index .spec.ports 0).nodePort}}’
+
+切到另一个集群
+kubectl config view
+kubectl config user-context xxxx
+kubectl config use-context  xxxx
+
+\end{lstlisting}
+
+
+
+
+\section{定义pod}
+
+\subsection{限制容器使用资源}
+
+创建包含一个容器的Pod，这个容器申请100M的内存，并且内存限制设置为200M
+放在contaner 下面
+
+jkljl \cite{Survey2014}
+\printbibliography
+
+\begin{lstlisting}
+    resources:
+      limits:
+        memory: "200Mi"
+      requests:
+        memory: "100Mi"
+\end{lstlisting}
+
+
+\subsection{pod生命周期与重启策略}
+
+A pod (as in a pod of whales or pea pod) is a group of one or more containers (such as Docker containers), with shared storage/network, and a specification for how to run the containers. A pod’s contents are always co-located and co-scheduled, and run in a shared context. A pod models an application-specific “logical host” - it contains one or more application containers which are relatively tightly coupled — in a pre-container world, they would have executed on the same physical or virtual machine.
+
+\href{https://kubernetes.io/docs/concepts/workloads/pods/pod/#termination-of-pods}{ermination-of-pods}
+
+The kubelet can optionally perform and react to two kinds of probes on running Containers:
+
+The kubelet uses liveness probes to know when to restart a Container. For example, liveness probes could catch a deadlock, where an application is running, but unable to make progress. Restarting a Container in such a state can help to make the application more available despite bugs.
+
+The kubelet uses readiness probes to know when a Container is ready to start accepting traffic. A Pod is considered ready when all of its Containers are ready. One use of this signal is to control which Pods are used as backends for Services. When a Pod is not ready, it is removed from Service load balancers.
+
+\begin{description}
+\item[livenessProbe] Indicates whether the Container is running. If the liveness probe fails, the kubelet kills the Container, and the Container is subjected to its restart policy. If a Container does not provide a liveness probe, the default state is Success.
+\item[readinessProbe] Indicates whether the Container is ready to service requests. If the readiness probe fails, the endpoints controller removes the Pod’s IP address from the endpoints of all Services that match the Pod. The default state of readiness before the initial delay is Failure. If a Container does not provide a readiness probe, the default state is Success
+\end{description}
+
+Probes have a number of fields that you can use to more precisely control the behavior of liveness and readiness checks:
+
+\begin{description}
+	\item[initialDelaySeconds] Number of seconds after the container has started before liveness or readiness probes are initiated.
+	\item[periodSeconds] How often (in seconds) to perform the probe. Default to 10 seconds. Minimum value is 1.
+	\item[timeoutSeconds] Number of seconds after which the probe times out. Defaults to 1 second. Minimum value is 1.
+	\item[successThreshold] Minimum consecutive successes for the probe to be considered successful after having failed. Defaults to 1. Must be 1 for liveness. Minimum value is 1.
+	\item[failureThreshold] When a Pod starts and the probe fails, Kubernetes will try failureThreshold times before giving up. Giving up in case of liveness probe means restarting the Pod. In case of readiness probe the Pod will be marked Unready. Defaults to 3. Minimum value is 1.
+\end{description}
+
+HTTP probes have additional fields that can be set on httpGet:
+
+\begin{description}
+	\item[host] Host name to connect to, defaults to the pod IP. You probably want to set “Host” in httpHeaders instead.
+	\item[scheme] Scheme to use for connecting to the host (HTTP or HTTPS). Defaults to HTTP.
+	\item[path] Path to access on the HTTP server.
+	\item[httpHeaders] Custom headers to set in the request. HTTP allows repeated headers.
+	\item[port] Name or number of the port to access on the container. Number must be in the range 1 to 65535.
+For an HTTP probe, the kubelet sends an HTTP request to the specified path and port to perform the check. The kubelet sends the probe to the pod’s IP address, unless the address is overridden by the optional hostfield in httpGet. If scheme field is set to HTTPS, the kubelet sends an HTTPS request skipping the certificate verification. In most scenarios, you do not want to set the host field. Here’s one scenario where you would set it. Suppose the Container listens on 127.0.0.1 and the Pod’s hostNetwork field is true. Then host, under httpGet, should be set to 127.0.0.1. If your pod relies on virtual hosts, which is probably the more common case, you should not use host, but rather set the Host header in httpHeaders.
+\end{description}
+
+\href{https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/}{configure-liveness-readiness-probes}
+
+A Probe is a diagnostic performed periodically by the kubelet on a Container. To perform a diagnostic, the kubelet calls a Handler implemented by the Container. There are three types of handlers:
+
+\begin{description}
+\item[ExecAction] Executes a specified command inside the Container. The diagnostic is considered successful if the command exits with a status code of 0.
+\item[TCPSocketAction] Performs a TCP check against the Container’s IP address on a specified port. The diagnostic is considered successful if the port is open.
+\item[HTTPGetAction] Performs an HTTP Get request against the Container’s IP address on a specified port and path. The diagnostic is considered successful if the response has a status code greater than or equal to 200 and less than 400.
+\end{description}
+
+Each probe has one of three results:
+Success: The Container passed the diagnostic.
+Failure: The Container failed the diagnostic.
+Unknown: The diagnostic failed, so no action should be taken.
+
+A PodSpec has a restartPolicy field with possible values Always, OnFailure, and Never. The default value is Always. restartPolicy applies to all Containers in the Pod. restartPolicy only refers to restarts of the Containers by the kubelet on the same node. Failed Containers that are restarted by the kubelet are restarted with an exponential back-off delay (10s, 20s, 40s …) capped at five minutes, and is reset after ten minutes of successful execution. As discussed in the Pods document, once bound to a node, a Pod will never be rebound to another node.
+
+
+\href{https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/}{pod-lifecycle}
+
+Kubernetes supports the postStart and preStop events. Kubernetes sends the postStart event immediately after a Container is started, and it sends the preStop event immediately before the Container is terminated
+
+https://kubernetes.io/docs/tasks/configure-pod-container/attach-handler-lifecycle-event/
+https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/
+
+\subsection{创建pod拉取私有库镜像}
+拉取镜像由 imagePullPolicy 来控制拉取策略，他有三个值   Always IfNotPresent Never
+
+
+当使用私有库拉镜像的时候需要创建secret 
+
+kubectl create secret docker-registry myregistrykey --docker-server=DOCKER_REGISTRY_SERVER --docker-username=DOCKER_USER --docker-password=DOCKER_PASSWORD --docker-email=DOCKER_EMAIL
+secret "myregistrykey" created.
+
+使用yaml，来创建secret这时候有一点麻烦，需要先docker login 登录私钥库，可以看到在家目录多出来个.docker隐藏目录，下面有config.json文件，这时需要使用base64加密，在定义secrete 时需要把加密后的值连续的赋予给data[".dockerconfigjson"]
+
+\begin{lstlisting}
+docker login  -u admin -p Harbor123  10.10.39.226
+[root@mobius_004 ~]# cd .docker/
+[root@mobius_004 .docker]# ls
+config.json
+[root@mobius_004 .docker]# cat config.json
+{
+	"auths": {
+		"10.10.39.226": {
+			"auth": "YWRtaW46SGFyYm9yMTIzNDU="
+		}
+	},
+	"HttpHeaders": {
+		"User-Agent": "Docker-Client/18.01.0-ce (linux)"
+	}
+}
+[root@mobius_004 .docker]# base64EncodeData=$(base64 -w 0 config.json)
+[root@mobius_004 .docker]# echo $base64EncodeData|base64 --decode
+apiVersion: v1
+kind: Secret
+metadata:
+  name: myregistrykey
+  namespace: awesomeapps
+data:
+  .dockerconfigjson: $base64EncodeData
+
+type: kubernetes.io/dockerconfigjson
+
+然后在创建pod的时候指定secrets来拉镜像
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: foo
+  namespace: awesomeapps
+spec:
+  containers:
+    - name: foo
+      image: janedoe/awesomeapp:v1
+  imagePullSecrets:
+    - name: myregistrykey
+
+\end{lstlisting}
+
+https://kubernetes.io/docs/concepts/containers/images/
+
+\section{kubeconfig 配置}
+
+kubeconfig 在kubectl, kubelet, kube-proxy,bootstrap都会用到，配置kubeconfig可以用三种方式
+
+通过命令方式
+
+\begin{lstlisting}
+ kubectl config set-cluster kubernetes \
+  --certificate-authority=/etc/kubernetes/ssl/ca.pem \
+  --embed-certs=true \
+  --server=${KUBE_APISERVER} \
+  --kubeconfig=kube-proxy.kubeconfig
+ # 设置客户端认证参数
+ kubectl config set-credentials kube-proxy \
+  --client-certificate=/etc/kubernetes/ssl/kube-proxy.pem \
+  --client-key=/etc/kubernetes/ssl/kube-proxy-key.pem \
+  --embed-certs=true \
+  --kubeconfig=kube-proxy.kubeconfig
+ # 设置上下文参数
+ kubectl config set-context default \
+  --cluster=kubernetes \
+  --user=kube-proxy \
+  --kubeconfig=kube-proxy.kubeconfig
+ # 设置默认上下文
+ kubectl config use-context default --kubeconfig=kube-proxy.kubeconfig
+ mv kube-proxy.kubeconfig /etc/kubernetes/
+\end{lstlisting}
+
+直接编辑方式
+
+.kube/config 这个配置文件可以指定文件或者指定base64值
+
+
+\begin{lstlisting}
+apiVersion: v1
+kind: Config
+users:
+- name: kubelet
+  user:
+    client-certificate-data: <base64-encoded-cert>
+    client-key-data: <base64-encoded-key>
+clusters:
+- name: local
+  cluster:
+    certificate-authority-data: <base64-encoded-ca-cert>
+contexts:
+- context:
+    cluster: local
+    user: kubelet
+  name: service-account-context
+current-context: service-account-context
+
+\end{lstlisting}
+
+加密密钥可以使用 base64 /Users/yulei/Documents/ansible/roles/kubernetes/files/ssl/ca.pem 便可得到
+
+To generate the base64 encoded client cert, you should be able to run something like cat /var/run/kubernetes/kubelet_36kr.pem | base64. If you don't have the CA certificate handy, you can replace the certificate-authority-data: <base64-encoded-ca-cert> with insecure-skip-tls-verify: true.
+
+If you put this file at /var/lib/kubelet/kubeconfig it should get picked up automatically. Otherwise, you can use the --kubeconfig argument to specify a custom location.
+
+或者在config里指定文件
+
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority: /etc/kubernetes/certs/ca.crt
+    server: https://kubernetesmaster
+  name: default-cluster
+contexts:
+- context:
+    cluster: default-cluster
+    user: default-admin
+  name: default-system
+current-context: default-system
+kind: Config
+preferences: {}
+users:
+- name: default-admin
+  user:
+    client-certificate: /etc/kubernetes/certs/server.crt
+    client-key: /etc/kubernetes/certs/server.key
+
+
+\section{生产环境中使用kubernetes}
+
+Kubernetes in prod
+
+https://techbeacon.com/one-year-using-kubernetes-production-lessons-learned
+
+https://github.com/kelseyhightower/confd
+
+https://www.graylog.org/
+
+https://www.loggly.com/blog/top-5-docker-logging-methods-to-fit-your-container-deployment-strategy/
+
+https://medium.com/readme-mic/kubernetes-1-year-in-production-f406bdb95c22
+
+https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.9/
+
+
+https://blog.dockbit.com/kubernetes-canary-deployments-for-mere-mortals-6696910a52b2
+
+https://kubernetes.io/docs/concepts/overview/what-is-kubernetes/
+
+https://www.loggly.com/resource/log-management-handbook-docker/
+
+https://medium.com/readme-mic/kubernetes-1-year-in-production-f406bdb95c22
+
+
+https://medium.com/readme-mic/kubernetes-1-year-in-production-f406bdb95c22
+
+\subsection{openshift}
+
+https://github.com/openshift/origin
+
+http://www.linkedin.com/pulse/part-2-kubernetes-services-minikube-docker-james-denman
+
+
+学习集群
+
+https://www.katacoda.com/courses/kubernetes/playground
+
+
+\section{kubernetes addon}
+
+
+\subsection{Discovering Services}
+discovering services - dns
+the DNS server watches kubernetes API for new Services
+the DNS server creates a set of DNS recordes for each Services
+Services can be resolved by the name within the same namespace
+Pods in other namespaces can access the Service by adding the namespace to the DNS path
+  my-service.my-namespace
+
+Discovering Services - env vars
+
+Service Types
+ ClusterIP: service is reachable only from inside of the cluster
+NodePort
+ Service is reachable through NodeIP:NodePort address
+LoadBalancer
+  service is reachable through an external load balancer mapped to NoderIP:NodePort address
+
+kubernetes create Docker link compatible environment variables in all pods
+containers can use the environment variable to talk to the service endpoint
+
+https://segmentfault.com/a/1190000002892825
+
+
+\section{pod的持久化}
+
+persistence in pods
+
+pods are ephemeral and stateless
+
+volumes bring persistence to pods
+
+kubernetes voluems are similar to docker volumes, but managed differently
+
+all containers in pod can access the volumes
+
+volumes are associated with the lifecycle of pod
+
+directories in the host are exposed as volumes
+
+volumes may be based on a variety of storage backends
+
+kubernetes have three method to persistence into your workload
+
+1:  basic volume will persistence to you pod with from limitations
+2: rely on distributed storage like NFS
+3: clear dispersing,
+
+kubernetes volume types
+
+\begin{lstlisting}
+- hostbased
+   emptydir
+    hostpath
+- block storage
+  amazon EBS
+  GCE Psersistent Disk
+  Azure Disk
+  VSphere Volume
+- Distributed file System
+  NFS
+  Ceph
+  Gluster
+  Amazon EFS
+- other
+  Flocker
+  iScsi
+  Git Repo
+
+
+
+gcloud container clusters get-credentials jani-gke-demo asia-east1-a
+gcloud compute disks create --size=10G --zone=asia-east1-a my-data-disk
+gcloud compute disks delete --zone=asia-east1-a my-data-dis
+
+\end{lstlisting}
+
+
+Unserstanding Psersistent Volume and Claims
+
+PersistentVolume(PV)
+  Networked storage in ther cluster per-provisioned  by a administrator
+PersistentVolumeClaim (PVC)
+  Storage resource requested by a user.
+StorageClass
+  types of supported storage profiles offered by administrator
+
+

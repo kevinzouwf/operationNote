@@ -1,0 +1,4 @@
+nginx+tomat8负载后，利用redis实现tomcat8的session共享
+
+
+文章链接：http://bakcom.iteye.com/blog/2263244

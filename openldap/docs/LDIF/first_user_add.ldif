@@ -1,0 +1,11 @@
+#Add First User
+#ldapmodify -D "cn=Manager,dc=linuxcbt,dc=internal" -x -a -W -f first_user_add.ldif
+dn: cn=LinuxCBT1,ou=people,dc=linuxcbt,dc=internal
+cn: LinuxCBT1
+sn: User
+mail: linuxcbt1@LinuxCBT.internal
+labeledURI: http://www.linuxcbt.internal
+roomNumber: One Stamford Plaza
+departmentNumber: Development
+telephoneNumber: 203-543-8979
+objectclass: inetOrgPerson

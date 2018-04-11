@@ -1,0 +1,56 @@
+yum install qemu-kvm qemu-img
+yum install virt-install  bridge-utils libvirt
+
+qemu-img create -f qcow2 centos-7.1.qcow2 50g
+
+systemctl start libvirtd
+
+创建linux
+virt-install --name Centos-7.1-x86_64-base  --virt-type kvm --memory 1024 --vcpus 1 --cdrom /data/iso/CentOS-7-x86_64-DVD-1503-01_2.iso  --disk path=/base_image/centos-7.1.qcow2,bus=virtio   --network network=br0,model=virtio --graphics vnc,listen=0.0.0.0 --noautoconsole
+
+创建windows
+virt-install --name zbddzx_ceshi-05  --ram 8192 --cpus 2 --cdrom=/Data/Base_images/2012R2.iso  --disk path=/Data/VMs/zbddzx_ceshi-05/zbddzx_ceshi-05.qcow2,bus=virtio  --graphics vnc,listen=0.0.0.0  --network bridge=virbr300,model=virtio --noautoconsole
+
+yum install guestfish   # copy-in copy-out
+
+guestfish 里面包含很多非常有用的工具，比如virt-copy-in可以把宿主机的文件直接copy进主机
+virt-copy-in /etc/selinux/config  -a /Data/Base_image/CentOS-6.6.qcow2  /etc/selinux/
+
+
+kvms:
+  - name: 'node2'
+    ip: '192.168.31.12'
+    gateway: '192.168.31.1'
+    cpu: 1
+    mem: 1048576
+    os: 'centos-7.1'
+    br: br0
+
+./bin/run.py -i test -h dns -v conf/kvm.yml  kvm
+
+
+安装 KVM 后都会发现网络接口里多了一个叫做 virbr0 的虚拟网络接口,一般情况下，虚拟网络接口virbr0用作nat，以允许虚拟机访问网络服务，但nat一般不用于生产环境。我们可以使用以下方法删除virbr0
+
+1、先使用virsh net-list查看所有的虚拟网络：
+
+[root@5201351 ~]# virsh net-list               //列出kvm虚拟网络
+
+
+2、卸载与删除virbr0虚拟网络接口
+
+[root@5201351 ~]# virsh net-destroy default    //重启libvirtd服务后会恢复
+[root@5201351 ~]# virsh net-undefine default
+
+
+2、从一个xml文件定义default网络，执行如下命令：
+
+[root@5201351 ~]# virsh net-define /var/lib/libvirt/network/default.xml   //从一个default.xml文件定义(但不开始)一个网络
+
+
+3、设置virbr0自动启动，执行如下命令：
+
+[root@5201351 ~]# virsh net-start default           //开始一个(以前定义的default)不活跃的网络,执行后ifconfig可见virbr0
+[root@5201351 ~]# virsh net-autostart default       //执行后Autostart外会变成yes
+
+
+https://github.com/jaywcjlove/handbook/blob/master/CentOS/CentOS7%E5%AE%89%E8%A3%85KVM%E8%99%9A%E6%8B%9F%E6%9C%BA%E8%AF%A6%E8%A7%A3.md

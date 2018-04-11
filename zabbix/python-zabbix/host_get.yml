@@ -1,0 +1,13 @@
+jsonrpc: "2.0"
+method: "host.get"
+params:
+  output:
+    - hostid
+  selectParentTemplates:
+    - templateid
+    - name
+  filter:
+    host:
+      - zabbix_agent
+auth: "a"
+id: 4

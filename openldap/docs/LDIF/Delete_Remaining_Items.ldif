@@ -1,0 +1,12 @@
+cn=LinuxCBT1,ou=people,dc=linuxcbt,dc=internal
+cn=LinuxCBT2,ou=people,dc=linuxcbt,dc=internal
+cn=LinuxCBT3,ou=people,dc=linuxcbt,dc=internal
+cn=LinuxCBT4,ou=people,dc=linuxcbt,dc=internal
+cn=LinuxCBT5,ou=people,dc=linuxcbt,dc=internal
+ou=people,dc=linuxcbt,dc=internal
+cn=LinuxCBT1,ou=engineering,dc=linuxcbt,dc=internal
+cn=LinuxCBT2,ou=engineering,dc=linuxcbt,dc=internal
+cn=LinuxCBT3,ou=engineering,dc=linuxcbt,dc=internal
+cn=LinuxCBT4,ou=engineering,dc=linuxcbt,dc=internal
+cn=LinuxCBT5,ou=engineering,dc=linuxcbt,dc=internal
+ou=engineering,dc=linuxcbt,dc=internal

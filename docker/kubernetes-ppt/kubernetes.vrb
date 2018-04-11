@@ -1,0 +1,7 @@
+\includegraphics[width=\textwidth,scale=0.6]{../kubernetes-101/images/kubernetes-master.png}
+^^I\begin{itemize}
+^^I^^I\item apiserver 管理k8s所有资源对象，与其他模块数据交互和通信的枢纽,提供用户接口,
+^^I^^I\item scheduler 调度pod分配到集群的那个nodes上。
+^^I^^I\item controller manager 监控资源变化，以达到预期目的。
+^^I\end{itemize}
+

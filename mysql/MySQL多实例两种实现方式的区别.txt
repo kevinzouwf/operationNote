@@ -1,0 +1,262 @@
+
+王硕导师给大家留的作业
+我们公司总部的dba部门目前用mysqld_multi命令做多实例的启停
+请同学们研究一下mysqld_multi命令启停多实例的方式。并比较一下两种方式管理多实例的优缺点
+
+mysql_multi是用来管理多个mysql实例的脚本命令
+利用mysqld_multi可以快速实现多主复制
+
+启动多个MySQL数据库实例
+mysqld_multi.server start 
+
+关闭所有数据库实例
+mysqld_multi.server stop 
+
+对单台数据库的启动和关闭
+语法：mysqld_multi [options] {start|stop|report} [GNR[,GNR] …]
+
+如对mysqld1的启动和关闭，可以通过mysqld_multi来操作
+启动： mysqd_multi start 1
+关闭： mysqd_multi stop 1
+
+也可以同时启动和关闭多个MySQL数据库实例
+启动： mysqd_multi start 1-3
+关闭： mysqd_multi stop 1-3
+
+mysqld_multi 启动 mysql 多实例
+
+1. 建立两个 mysql 数据库实例
+mysql_install_db --datadir=xxx
+
+2. 配置 /etc/my.cnf
+[client]
+#password	= your_password
+#port = 3306
+#socket = /var/lib/mysql/mysql.sock
+
+# Here follows entries for some specific programs
+[mysqld_multi] 
+mysqld = /usr/bin/mysqld_safe 
+mysqladmin = /usr/bin/mysqladmin 
+user = mysql
+password = mysql
+
+[mysqld1]
+datadir = /home/intple/mysql/data1
+max_connections = 800
+
+long_query_time = 0.1
+#log-queries-not-using-indexes
+slow_query_log = 1
+slow_query_log_file = /var/log/mysql-slow.log
+
+port = 3306
+socket = /home/intple/mysql/data1/mysql.sock
+skip-locking
+key_buffer_size = 384M
+max_allowed_packet = 1M
+table_open_cache = 512
+sort_buffer_size = 2M
+read_buffer_size = 2M
+read_rnd_buffer_size = 8M
+myisam_sort_buffer_size = 64M
+thread_cache_size = 32
+query_cache_size = 512M
+# Try number of CPU's*2 for thread_concurrency
+thread_concurrency = 32
+
+log-bin=mysql-bin
+
+server-id = 1
+
+binlog_format=mixed
+
+innodb_buffer_pool_size = 20G
+innodb_additional_mem_pool_size = 32M
+innodb_thread_concurrency = 32
+# Set .._log_file_size to 25 % of buffer pool size
+innodb_log_file_size = 256M
+innodb_log_buffer_size = 32M
+innodb_flush_log_at_trx_commit = 1
+innodb_autoextend_increment = 64M
+innodb_lock_wait_timeout = 200
+
+[mysqld2]
+datadir = /home/intple/mysql/data2
+max_connections = 800
+
+long_query_time = 0.1
+#log-queries-not-using-indexes
+slow_query_log = 1
+slow_query_log_file = /var/log/mysql2-slow.log
+
+port = 3307
+socket = /home/intple/mysql/data2/mysql2.sock
+skip-locking
+key_buffer_size = 384M
+max_allowed_packet = 1M
+table_open_cache = 512
+sort_buffer_size = 2M
+read_buffer_size = 2M
+read_rnd_buffer_size = 8M
+myisam_sort_buffer_size = 64M
+thread_cache_size = 32
+query_cache_size = 512M
+# Try number of CPU's*2 for thread_concurrency
+thread_concurrency = 32
+
+log-bin=mysql-bin
+
+server-id	= 1
+
+binlog_format=mixed
+
+innodb_buffer_pool_size = 20G
+innodb_additional_mem_pool_size = 32M
+innodb_thread_concurrency = 32
+# Set .._log_file_size to 25 % of buffer pool size
+innodb_log_file_size = 256M
+innodb_log_buffer_size = 32M
+innodb_flush_log_at_trx_commit = 1
+innodb_autoextend_increment = 64M
+innodb_lock_wait_timeout = 200
+
+[mysqldump]
+quick
+max_allowed_packet = 16M
+
+[mysql]
+no-auto-rehash
+# Remove the next comment character if you are not familiar with SQL
+#safe-updates
+
+[myisamchk]
+key_buffer_size = 256M
+sort_buffer_size = 256M
+read_buffer = 2M
+write_buffer = 2M
+
+[mysqlhotcopy]
+interactive-timeout
+
+3. 启动
+mysqld_multi start 1 &
+mysqld_multi start 2 &
+
+
+mysql的多实例的两种实现方式
+
+一、使用多个配置文件启动不同的进程来实现多实例
+    这种方式的优势逻辑简单，配置简单，缺点是管理起来不太方便
+
+二、通过官方自带的mysqld_multi使用单独的配置文件来实现多实例
+    这种方式定制每个实例的配置不太方面，优点是管理起来很方便，集中管理
+
+下面是这两种多实例的安装和管理的详细步骤
+多个配置文件启动不同的进程来实现多实例
+
+环境介绍：centos 6.1  mysql 5.5.27 实例个数3个 占用端口分别为3306，3307
+首先安装3306端口数据库
+
+略过。。。。。。
+
+初始化3307数据库	
+/data/software/mysql-5.5.27/scripts/mysql_install_db \
+--user=mysql --basedir=/usr/local/data/3307/ --datadir=/data/mysql/3307/data/
+
+复制配置文件和启动文件
+cp /data/mysql/3306/my.cnf /data/mysql/3307/my.cnf
+cp /data/mysql/3306/mysql /data/mysql/3307/mysql
+
+修改配置文件和启动脚本，将里面的端口和sock 由3306更换为3307
+以下为3307 启动脚本
+
+查看文本打印
+#!/bin/sh   
+   
+mysql_port=3307   
+mysql_username="admin"   
+mysql_password="12345678"   
+   
+function_start_mysql()   
+{   
+    printf "Starting MySQL...\n"   
+    /bin/sh /usr/local/data/3307/bin/mysqld_safe \
+	--defaults-file=/data/mysql/${mysql_port}/my.cnf 2>&1 > /dev/null &   
+}   
+   
+function_stop_mysql()   
+{   
+    printf "Stoping MySQL...\n"   
+    /usr/local/data/mysql/bin/mysqladmin -u \
+	${mysql_username} -p${mysql_password} -S /tmp/mysql3307.sock shutdown   
+}   
+   
+function_restart_mysql()   
+{   
+    printf "Restarting MySQL...\n"   
+    function_stop_mysql   
+    sleep 5   
+    function_start_mysql   
+}   
+     
+if [ "$1" = "start" ]; then   
+    function_start_mysql   
+elif [ "$1" = "stop" ]; then   
+    function_stop_mysql   
+elif [ "$1" = "restart" ]; then   
+    function_restart_mysql   
+elif [ "$1" = "kill" ]; then   
+    function_kill_mysql   
+else   
+    printf "Usage: /data/mysql/${mysql_port}/mysql {start&#124;stop&#124;restart&#124;kill}\n"   
+fi   
+   
+以下文3307配置文件
+查看文本打印
+[client]   
+port    = 3307   
+socket  = /tmp/mysql3307.sock   
+   
+[mysqld]   
+replicate-ignore-db = mysql   
+replicate-ignore-db = test   
+replicate-ignore-db = information_schema   
+user    = mysql   
+port    = 3307   
+socket  = /tmp/mysql3307.sock   
+basedir = /usr/local/data/3307   
+datadir = /data/mysql/3307/data   
+log-error = /data/mysql/3307/mysql_error.log   
+open_files_limit    = 10240   
+pid-file = /data/mysql/3307/mysql.pid   
+back_log = 600   
+max_connections = 5000   
+max_connect_errors = 6000   
+table_cache = 614   
+external-locking = FALSE   
+max_allowed_packet = 32M   
+sort_buffer_size = 1M   
+join_buffer_size = 1M   
+thread_cache_size = 300   
+#thread_concurrency = 8   
+query_cache_size = 512M   
+query_cache_limit = 2M   
+query_cache_min_res_unit = 2k   
+default-storage-engine = MyISAM   
+thread_stack = 192K   
+transaction_isolation = READ-COMMITTED   
+tmp_table_size = 246M   
+max_heap_table_size = 246M   
+long_query_time = 3   
+log-slave-updates   
+#log-bin = /data/mysql/3307/binlog/binlog   
+#binlog_cache_size = 4M   
+#binlog_format = MIXED   
+#max_binlog_cache_size = 8M 
+  
+启动3306,3307端口mysql
+/data/mysql/3306/mysql start
+/data/mysql/3307/myssql start
+
+

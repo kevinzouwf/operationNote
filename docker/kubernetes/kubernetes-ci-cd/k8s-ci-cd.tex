@@ -1,0 +1,41 @@
+\section{k8s ci cd}
+
+
+制作一个镜像，并上传到私有仓库
+
+cd hellowhale
+
+docker build . -t hellowhale
+docker run -d -p80:80 --name hellowhale hellowhale
+docker tag hellowhale  janakiramm/hellowhale
+docker login -u xxx -p xxx 
+
+kubectl create deployment hellowhale --image janakiramm/hellowhale
+kubectl get deployments
+kubectl get pods
+kubectl expose deployment/hellowhale --port=80  --name=hellowhalesvc --type=LoadBalancer
+
+jenkins 配置
+在配置中，增加全局属性。
+在github 的仓库中选择setting增加integration & services 然后直接add services 然后选择
+add jenkins github plugin
+
+在jenkins里增加一个自由风格的项目，增加git project , source code .
+build execute shell 
+
+#jenkins build config 
+IMAGE_NAME="janakiramm/hellowhale:${BUILD_NUMBER}"
+docker build . -t $IMAGE_NAME
+docker login -u janakiramm -p ${DCOKER_HUB}
+docker push $IMAGE_NAME
+
+add execute shell
+
+#deploy to kubernetes
+IMAGE_NAME="janakiramm/hellowhale:${BUILD_NUMBER}"
+kuberctl set image deployment/hellowhale hellowhale=$IMAGE_NAME
+
+注意这里如果无法执行，那么可能是因为kube config没有复制到jenkins的工作目录
+cp ~/.kube/config /home/jenkins/.kube/ 
+cp ~/.kube/config /var/lib/jenkins/.kube/
+然后重启jenkins

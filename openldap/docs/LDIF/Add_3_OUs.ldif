@@ -1,0 +1,14 @@
+#ldapmodify -D "cn=Manager,dc=linuxcbt,dc=internal" -x -a -W -f first_user_add.ldif
+#ldapadd -D "cn=Manager,dc=linuxcbt,dc=internal" -W -h localhost -x
+
+dn: ou=people,dc=linuxcbt,dc=internal
+ou: people
+objectClass: organizationalUnit
+
+dn: ou=engineering,dc=linuxcbt,dc=internal
+ou: engineering
+objectclass: organizationalUnit
+
+dn: ou=sales,dc=linuxcbt,dc=internal
+ou: sales
+objectclass: organizationalUnit

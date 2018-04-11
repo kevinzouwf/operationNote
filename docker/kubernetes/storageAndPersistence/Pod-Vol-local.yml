@@ -1,0 +1,21 @@
+apiVersion: "v1"
+kind: Pod
+metadata:
+  name: nginx
+  lables:
+    env: dev
+spec:
+  containers:
+    - name: nginx
+      image: nginx
+      ports:
+        - containerPort: 80
+          name: http
+          protocol: TCP
+      volumeMounts:
+      - mountPath: /usr/share/nginx/html
+        name: mv-vole
+  volumes:
+    - name: my-vol
+      hostPath:
+        path: /var/lib/my-data

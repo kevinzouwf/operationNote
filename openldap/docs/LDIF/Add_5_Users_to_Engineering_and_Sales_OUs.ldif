@@ -1,0 +1,159 @@
+#Add First User
+#ldapmodify -D "cn=Manager,dc=linuxcbt,dc=internal" -x -a -W -f first_user_add.ldif
+
+dn: cn=LinuxCBT1,ou=engineering,dc=linuxcbt,dc=internal
+cn: LinuxCBT1
+sn: User
+mail: linuxcbt1@LinuxCBT.internal
+labeledURI: http://www.linuxcbt.internal
+roomNumber: One Stamford Plaza
+departmentNumber: Development
+telephoneNumber: 203-543-8979
+objectclass: inetOrgPerson
+
+
+dn: cn=LinuxCBT2,ou=engineering,dc=linuxcbt,dc=internal
+cn: LinuxCBT2
+sn: User
+mail: linuxcbt2@LinuxCBT.internal
+labeledURI: http://www.linuxcbt.internal
+roomNumber: One Stamford Plaza
+departmentNumber: Development
+telephoneNumber: 203-543-8979
+objectclass: inetOrgPerson
+
+dn: cn=LinuxCBT3,ou=engineering,dc=linuxcbt,dc=internal
+cn: LinuxCBT3
+sn: User
+mail: linuxcbt3@LinuxCBT.internal
+labeledURI: http://www.linuxcbt.internal
+roomNumber: One Stamford Plaza
+departmentNumber: Development
+telephoneNumber: 203-543-8979
+objectclass: inetOrgPerson
+
+dn: cn=LinuxCBT4,ou=engineering,dc=linuxcbt,dc=internal
+cn: LinuxCBT4
+sn: User
+mail: linuxcbt4@LinuxCBT.internal
+labeledURI: http://www.linuxcbt.internal
+roomNumber: One Stamford Plaza
+departmentNumber: Development
+telephoneNumber: 203-543-8979
+objectclass: inetOrgPerson
+
+dn: cn=LinuxCBT5,ou=engineering,dc=linuxcbt,dc=internal
+cn: LinuxCBT5
+sn: User
+mail: linuxcbt5@LinuxCBT.internal
+labeledURI: http://www.linuxcbt.internal
+roomNumber: One Stamford Plaza
+departmentNumber: Development
+telephoneNumber: 203-543-8979
+objectclass: inetOrgPerson
+
+
+#Add First User
+#ldapmodify -D "cn=Manager,dc=linuxcbt,dc=internal" -x -a -W -f first_user_add.ldif
+
+dn: cn=LinuxCBT1,ou=sales,dc=linuxcbt,dc=internal
+cn: LinuxCBT1
+sn: User
+mail: linuxcbt1@LinuxCBT.internal
+labeledURI: http://www.linuxcbt.internal
+roomNumber: One Stamford Plaza
+departmentNumber: Development
+telephoneNumber: 203-543-8979
+objectclass: inetOrgPerson
+
+
+dn: cn=LinuxCBT2,ou=sales,dc=linuxcbt,dc=internal
+cn: LinuxCBT2
+sn: User
+mail: linuxcbt2@LinuxCBT.internal
+labeledURI: http://www.linuxcbt.internal
+roomNumber: One Stamford Plaza
+departmentNumber: Development
+telephoneNumber: 203-543-8979
+objectclass: inetOrgPerson
+
+dn: cn=LinuxCBT3,ou=sales,dc=linuxcbt,dc=internal
+cn: LinuxCBT3
+sn: User
+mail: linuxcbt3@LinuxCBT.internal
+labeledURI: http://www.linuxcbt.internal
+roomNumber: One Stamford Plaza
+departmentNumber: Development
+telephoneNumber: 203-543-8979
+objectclass: inetOrgPerson
+
+dn: cn=LinuxCBT4,ou=sales,dc=linuxcbt,dc=internal
+cn: LinuxCBT4
+sn: User
+mail: linuxcbt4@LinuxCBT.internal
+labeledURI: http://www.linuxcbt.internal
+roomNumber: One Stamford Plaza
+departmentNumber: Development
+telephoneNumber: 203-543-8979
+objectclass: inetOrgPerson
+
+dn: cn=LinuxCBT5,ou=sales,dc=linuxcbt,dc=internal
+cn: LinuxCBT5
+sn: User
+mail: linuxcbt5@LinuxCBT.internal
+labeledURI: http://www.linuxcbt.internal
+roomNumber: One Stamford Plaza
+departmentNumber: Development
+telephoneNumber: 203-543-8979
+objectclass: inetOrgPerson
+
+dn: cn=LinuxCBT1,ou=people,dc=linuxcbt,dc=internal
+cn: LinuxCBT1
+sn: User
+mail: linuxcbt1@LinuxCBT.internal
+labeledURI: http://www.linuxcbt.internal
+roomNumber: One Stamford Plaza
+departmentNumber: Development
+telephoneNumber: 203-543-8979
+objectclass: inetOrgPerson
+
+
+dn: cn=LinuxCBT2,ou=people,dc=linuxcbt,dc=internal
+cn: LinuxCBT2
+sn: User
+mail: linuxcbt2@LinuxCBT.internal
+labeledURI: http://www.linuxcbt.internal
+roomNumber: One Stamford Plaza
+departmentNumber: Development
+telephoneNumber: 203-543-8979
+objectclass: inetOrgPerson
+
+dn: cn=LinuxCBT3,ou=people,dc=linuxcbt,dc=internal
+cn: LinuxCBT3
+sn: User
+mail: linuxcbt3@LinuxCBT.internal
+labeledURI: http://www.linuxcbt.internal
+roomNumber: One Stamford Plaza
+departmentNumber: Development
+telephoneNumber: 203-543-8979
+objectclass: inetOrgPerson
+
+dn: cn=LinuxCBT4,ou=people,dc=linuxcbt,dc=internal
+cn: LinuxCBT4
+sn: User
+mail: linuxcbt4@LinuxCBT.internal
+labeledURI: http://www.linuxcbt.internal
+roomNumber: One Stamford Plaza
+departmentNumber: Development
+telephoneNumber: 203-543-8979
+objectclass: inetOrgPerson
+
+dn: cn=LinuxCBT5,ou=people,dc=linuxcbt,dc=internal
+cn: LinuxCBT5
+sn: User
+mail: linuxcbt5@LinuxCBT.internal
+labeledURI: http://www.linuxcbt.internal
+roomNumber: One Stamford Plaza
+departmentNumber: Development
+telephoneNumber: 203-543-8979
+objectclass: inetOrgPerson

@@ -1,0 +1,81 @@
+subversion         i386           1.6.11-7.el5_6.4
+# svn import project/ file:///home/svn/project -m  comment"初始化SVN目录"
+如果出现下面的错误：
+Can't open file '/Code/SVN/repos/db/txn-current-lock': Permission denied
+
+下面是 解决方案：
+
+这个主要原因：在svnadmin create时是root身份，所以，mod_dav_svn就没有write权限等。
+
+
+
+解决办法：
+sudo chown -R apache:apache /Code/SVN/repos
+查看svn服务器上的目录命令
+svn list file:///home/svn/project/
+
+一，安装必须的软件包.
+yum install httpd mod_dav_svn subversion mod_ssl 
+
+二，基本的SVN服务器配置
+1，新建一个目录用于存储SVN所有文件
+# mkdir /home/svn
+
+2，新建一个版本仓库
+# svnadmin create /home/svn/project
+
+3，初始化版本仓库中的目录
+# mkdir project project/server project/client project/test (建立临时目录)
+# svn import project/ file:///home/svn/project -m "初始化SVN目录"
+# rm -rf project (删除临时建立的目录)
+
+4，添加用户
+htpasswd -c /home/svn/project/passwd gong
+
+5，修改用户访问策略
+/home/svn/project/authz记录用户的访问策略.
+[groups]
+admin=gong
+
+
+[project:/]
+gong=rw
+* = 
+[project:/server]
+gong=rw
+
+[project:/client]
+gong=rw
+
+[project:/test]
+gong=rw
+
+
+6修改svnserve.conf文件,让用户和策略配置升效.
+svnserve.conf内容如下:
+[general]
+anon-access = none
+auth-access = write
+password-db = /home/svn/project/conf/passwd
+authz-db = /home/svn/project/conf/authz
+
+
+7 修改httpd.conf，添加关于SVN服务器的内容
+编辑/etc/httpd/conf/httpd.conf，在最后添加如下信息:
+<Location /project>
+                    DAV svn
+                    SVNPath /home/svn/project/
+                    AuthType Basic
+                    AuthName "svn for project"
+                    AuthUserFile /home/svn/project/passwd
+                    AuthzSVNAccessFile /home/svn/project/authz
+                    Satisfy all
+                    Require valid-user
+                </Location>
+
+
+8 启动HTTPD服务器
+# service httpd restart
+Stopping httpd:                                            [FAILED]
+Starting httpd:                                            [  OK  ]
+

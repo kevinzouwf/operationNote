@@ -1,0 +1,416 @@
+dn: ou=People,dc=linuxcbt,dc=internal
+ou: People
+objectClass: top
+objectClass: organizationalUnit
+
+dn: ou=Group,dc=linuxcbt,dc=internal
+ou: Group
+objectClass: top
+objectClass: organizationalUnit
+
+dn: uid=root,ou=People,dc=linuxcbt,dc=internal
+uid: root
+cn: root
+objectClass: account
+objectClass: posixAccount
+objectClass: top
+objectClass: shadowAccount
+userPassword: {crypt}$2a$05$Rib/xQ/lbFgT0ejev.t5Y.Jeb5qi5lqfOEsbEvgjaTo1M48vlGjee
+shadowLastChange: 14154
+loginShell: /bin/bash
+uidNumber: 0
+gidNumber: 0
+homeDirectory: /root
+gecos: root
+
+dn: uid=dean,ou=People,dc=linuxcbt,dc=internal
+uid: dean
+cn: Dean Davis
+objectClass: account
+objectClass: posixAccount
+objectClass: top
+objectClass: shadowAccount
+userPassword: {crypt}$2a$05$fx2AHuj0bBRBF3/566A1oOVjXuMSugBzdZPTN90NdMzg6pc.OF5Aq
+shadowLastChange: 14154
+shadowMax: 99999
+shadowWarning: 7
+loginShell: /bin/bash
+uidNumber: 1000
+gidNumber: 100
+homeDirectory: /home/dean
+gecos: Dean Davis
+
+dn: uid=lcbtsuse2local1,ou=People,dc=linuxcbt,dc=internal
+uid: lcbtsuse2local1
+cn: lcbtsuse2local1
+objectClass: account
+objectClass: posixAccount
+objectClass: top
+objectClass: shadowAccount
+userPassword: {crypt}$2a$05$ZhwbwET9Tlr3ErPMoRUrxeZTpNcRh0kjGMG/Y6miz8GvQSGeNe3VW
+shadowLastChange: 14195
+shadowMax: 99999
+shadowWarning: 7
+loginShell: /bin/bash
+uidNumber: 1004
+gidNumber: 100
+homeDirectory: /home/lcbtsuse2local1
+gecos: lcbtsuse2local1
+
+dn: uid=linuxcbtldaptest,ou=People,dc=linuxcbt,dc=internal
+uid: linuxcbtldaptest
+cn: linuxcbtldaptest
+objectClass: account
+objectClass: posixAccount
+objectClass: top
+objectClass: shadowAccount
+userPassword: {crypt}$2a$05$IlcVKhCTnPVo6tXp1Ah45O6mYqHhi/76JY2Rr4tChHAEl63L2MyLK
+shadowLastChange: 14194
+shadowMax: 99999
+shadowWarning: 7
+loginShell: /bin/bash
+uidNumber: 1001
+gidNumber: 100
+homeDirectory: /home/linuxcbtldaptest
+gecos: linuxcbtldaptest
+
+dn: uid=lcbtrhlocal1,ou=People,dc=linuxcbt,dc=internal
+uid: lcbtrhlocal1
+cn: lcbtrhlocal1
+objectClass: account
+objectClass: posixAccount
+objectClass: top
+objectClass: shadowAccount
+userPassword: {crypt}$1$Diz0PMgn$SwWF.NbAvrZnM.JJHcON/0
+shadowLastChange: 14195
+shadowMax: 99999
+shadowWarning: 7
+loginShell: /bin/bash
+uidNumber: 504
+gidNumber: 504
+homeDirectory: /home/lcbtrhlocal1
+gecos: lcbtrhlocal1
+
+dn: uid=lcbtsunlocal1,ou=People,dc=linuxcbt,dc=internal
+uid: lcbtsunlocal1
+cn: lcbtsunlocal1
+objectClass: account
+objectClass: posixAccount
+objectClass: top
+objectClass: shadowAccount
+userPassword: {crypt}*LK*
+loginShell: /bin/sh
+uidNumber: 1005
+gidNumber: 1
+homeDirectory: /home/lcbtsunlocal1
+
+
+dn: cn=at,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: at
+userPassword: {crypt}!
+gidNumber: 25
+
+dn: cn=audio,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: audio
+userPassword: {crypt}x
+gidNumber: 17
+
+dn: cn=bin,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: bin
+userPassword: {crypt}x
+gidNumber: 1
+memberUid: daemon
+
+dn: cn=cdrom,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: cdrom
+userPassword: {crypt}x
+gidNumber: 20
+
+dn: cn=console,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: console
+userPassword: {crypt}x
+gidNumber: 21
+
+dn: cn=daemon,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: daemon
+userPassword: {crypt}x
+gidNumber: 2
+
+dn: cn=dialout,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: dialout
+userPassword: {crypt}x
+gidNumber: 16
+memberUid: dean
+memberUid: lcbtsuse2local1
+memberUid: linuxcbtldaptest
+
+dn: cn=disk,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: disk
+userPassword: {crypt}x
+gidNumber: 6
+
+dn: cn=floppy,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: floppy
+userPassword: {crypt}x
+gidNumber: 19
+
+dn: cn=ftp,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: ftp
+userPassword: {crypt}x
+gidNumber: 49
+
+dn: cn=games,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: games
+userPassword: {crypt}x
+gidNumber: 40
+
+dn: cn=gdm,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: gdm
+userPassword: {crypt}!
+gidNumber: 105
+
+dn: cn=haldaemon,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: haldaemon
+userPassword: {crypt}!
+gidNumber: 102
+
+dn: cn=kmem,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: kmem
+userPassword: {crypt}x
+gidNumber: 9
+
+dn: cn=ldap,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: ldap
+userPassword: {crypt}!
+gidNumber: 70
+
+dn: cn=lp,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: lp
+userPassword: {crypt}x
+gidNumber: 7
+
+dn: cn=mail,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: mail
+userPassword: {crypt}x
+gidNumber: 12
+
+dn: cn=maildrop,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: maildrop
+userPassword: {crypt}!
+gidNumber: 59
+
+dn: cn=man,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: man
+userPassword: {crypt}x
+gidNumber: 62
+
+dn: cn=messagebus,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: messagebus
+userPassword: {crypt}!
+gidNumber: 101
+
+dn: cn=modem,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: modem
+userPassword: {crypt}x
+gidNumber: 43
+
+dn: cn=mysql,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: mysql
+userPassword: {crypt}!
+gidNumber: 104
+
+dn: cn=news,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: news
+userPassword: {crypt}x
+gidNumber: 13
+
+dn: cn=nobody,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: nobody
+userPassword: {crypt}x
+gidNumber: 65533
+
+dn: cn=nogroup,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: nogroup
+userPassword: {crypt}x
+gidNumber: 65534
+memberUid: nobody
+
+dn: cn=ntadmin,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: ntadmin
+userPassword: {crypt}!
+gidNumber: 71
+
+dn: cn=ntp,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: ntp
+userPassword: {crypt}!
+gidNumber: 103
+
+dn: cn=postfix,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: postfix
+userPassword: {crypt}!
+gidNumber: 51
+
+dn: cn=public,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: public
+userPassword: {crypt}x
+gidNumber: 32
+
+dn: cn=root,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: root
+userPassword: {crypt}x
+gidNumber: 0
+
+dn: cn=shadow,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: shadow
+userPassword: {crypt}x
+gidNumber: 15
+
+dn: cn=sshd,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: sshd
+userPassword: {crypt}!
+gidNumber: 65
+
+dn: cn=suse-ncc,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: suse-ncc
+userPassword: {crypt}!
+gidNumber: 106
+
+dn: cn=sys,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: sys
+userPassword: {crypt}x
+gidNumber: 3
+
+dn: cn=trusted,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: trusted
+userPassword: {crypt}x
+gidNumber: 42
+
+dn: cn=tty,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: tty
+userPassword: {crypt}x
+gidNumber: 5
+
+dn: cn=utmp,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: utmp
+userPassword: {crypt}x
+gidNumber: 22
+
+dn: cn=uucp,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: uucp
+userPassword: {crypt}x
+gidNumber: 14
+
+dn: cn=video,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: video
+userPassword: {crypt}x
+gidNumber: 33
+memberUid: dean
+memberUid: lcbtsuse2local1
+memberUid: linuxcbtldaptest
+
+dn: cn=wheel,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: wheel
+userPassword: {crypt}x
+gidNumber: 10
+
+dn: cn=www,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: www
+userPassword: {crypt}x
+gidNumber: 8
+
+dn: cn=xok,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: xok
+userPassword: {crypt}x
+gidNumber: 41
+
+dn: cn=users,ou=Group,dc=linuxcbt,dc=internal
+objectClass: posixGroup
+objectClass: top
+cn: users
+userPassword: {crypt}x
+gidNumber: 100
+

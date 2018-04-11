@@ -1,0 +1,63 @@
+dn: dc=linuxcbt,dc=internal
+dc: linuxcbt
+objectClass: dcObject
+objectClass: organizationalUnit
+ou: LINUXCBTINTERNAL
+structuralObjectClass: organizationalUnit
+entryUUID: 09a0029c-3e4c-102d-8f28-01a0c903dfb7
+creatorsName: cn=Manager,dc=linuxcbt,dc=internal
+createTimestamp: 20081103233652Z
+entryCSN: 20081103233652Z#000000#00#000000
+modifiersName: cn=Manager,dc=linuxcbt,dc=internal
+modifyTimestamp: 20081103233652Z
+
+dn: ou=people,dc=linuxcbt,dc=internal
+ou: people
+objectClass: organizationalUnit
+structuralObjectClass: organizationalUnit
+entryUUID: eabca0aa-3e4c-102d-8f29-01a0c903dfb7
+creatorsName: cn=Manager,dc=linuxcbt,dc=internal
+createTimestamp: 20081103234310Z
+entryCSN: 20081103234310Z#000000#00#000000
+modifiersName: cn=Manager,dc=linuxcbt,dc=internal
+modifyTimestamp: 20081103234310Z
+
+dn: ou=engineering,dc=linuxcbt,dc=internal
+ou: engineering
+objectClass: organizationalUnit
+structuralObjectClass: organizationalUnit
+entryUUID: eabe3df2-3e4c-102d-8f2a-01a0c903dfb7
+creatorsName: cn=Manager,dc=linuxcbt,dc=internal
+createTimestamp: 20081103234310Z
+entryCSN: 20081103234310Z#000001#00#000000
+modifiersName: cn=Manager,dc=linuxcbt,dc=internal
+modifyTimestamp: 20081103234310Z
+
+dn: ou=sales,dc=linuxcbt,dc=internal
+ou: sales
+objectClass: organizationalUnit
+structuralObjectClass: organizationalUnit
+entryUUID: eabf471a-3e4c-102d-8f2b-01a0c903dfb7
+creatorsName: cn=Manager,dc=linuxcbt,dc=internal
+createTimestamp: 20081103234310Z
+entryCSN: 20081103234310Z#000002#00#000000
+modifiersName: cn=Manager,dc=linuxcbt,dc=internal
+modifyTimestamp: 20081103234310Z
+
+dn: cn=LinuxCBT1,ou=people,dc=linuxcbt,dc=internal
+cn: LinuxCBT1
+sn: User
+mail: linuxcbt1@LinuxCBT.internal
+labeledURI: http://www.linuxcbt.internal
+roomNumber: One Stamford Plaza
+departmentNumber: Development
+telephoneNumber: 203-543-8979
+objectClass: inetOrgPerson
+structuralObjectClass: inetOrgPerson
+entryUUID: d709435a-3e4d-102d-8f2c-01a0c903dfb7
+creatorsName: cn=Manager,dc=linuxcbt,dc=internal
+createTimestamp: 20081103234946Z
+entryCSN: 20081103234946Z#000000#00#000000
+modifiersName: cn=Manager,dc=linuxcbt,dc=internal
+modifyTimestamp: 20081103234946Z
+

@@ -1,0 +1,16 @@
+apiVsersion: v1
+kind: PersistantVolume
+metadata:
+  labels:
+    type: local
+  name: mysql-local-volume
+spec:
+  accessModes:
+  - ReadWriteMany
+  capacity:
+    storage: 10Gi
+  hostPath:
+    path: /tmp/data
+  persistentVolumeReclaimPolicy: Recycle
+  stroageClassName: manua1
+          

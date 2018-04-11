@@ -1,0 +1,9 @@
+#Build People OU
+#ldapmodify -D "cn=Manager,dc=linuxcbt,dc=internal" -w "Trishaa34" -x -a -f build_people_ou.ldif
+dn: ou=people,dc=linuxcbt,dc=internal
+ou: people
+objectClass: organizationalUnit
+
+dn: ou=users,dc=linuxcbt,dc=internal
+ou: users
+objectClass: organizationalUnit

@@ -1,0 +1,16 @@
+$TTL    604800
+@    IN    SOA    ns1.www.gsandow.com. admin.www.gsandow.com. (
+                3   
+                60480
+                86400
+                2419200
+                604800)
+; name server
+         NS           ns1.www.gsandow.com.
+         NS           ns2.www.gsandow.com.
+; PTR recodes
+111.56    IN    PTR    ns1.www.gsandow.com.
+112.56    IN    PTR    ns2.www.gsandow.com.
+100.56    IN    PTR    host1.www.gsandow.com.
+101.56    IN    PTR    host2.www.gsandow.com.
+

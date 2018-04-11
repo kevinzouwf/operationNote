@@ -1,0 +1,38 @@
+\section{mysql半同步复制}
+默认情况下mysql（5.1，5.5）主从同步是异步的，异步复制可以提供最佳的性能，主库把binlog发给从库，这一动作就结束了，并不会验证从库是否接收完毕，但这会带来风险，主从可能数据不一致。
+
+半同步复制是从服务器接收完主服务器发送的binlog日志文件并写入自己的中继日志里然后会给主服务器一个反馈，告诉对方已经接收完毕，这时主库线程才返回给当前session告知操作完成。当出现超时情况时，源主服务器会暂时切换到异步复制，直到从服务器及时收到信息为止。
+
+\begin{lsting}
+cd /usr/local/mysql/lib/plugin
+ls semisync_*
+mysql> install plugin rpl_semi_sync_master soname'semisync_master.so;
+mysql> set global rpl_semi_sync_master_enabled=ON
+mysql> install plugin rpl_semi_sync_slave soname'semisync_slave.so;
+mysql> set global rpl_semi_sync_slave_enabled=ON
+\end{lsting}
+
+主库
+
+rpm_semi_sync_master_enabled = ON  开启半同步复制
+
+rpl_semi_sync_master_timeout = 10000 默认为1000毫秒，如果主库在某次事务中的等待时间超过10秒，刚降级为异步复制，如果主库再次探测到slave 从库恢复了，则会自动再次回来半同步模式
+
+rpl_semi_sync_master_wait_no_slave  表示是否允许master每个事务提交后都要等待slave的接收确认信号，默认为ON，如果为OFF，从库追赶上后也不会开启半同步复制模式，需要手工开启
+
+rpl_semi_sync_master_trace_level = 32  开启半同步复制模式的调试级别默认为32.
+
+从库
+
+rpm_semi_sync_slave_enabled = ON  开启半同步复制
+
+rpl_semi_sync_master_trace_level = 32  开启半同步复制模式的调试级别默认为32.
+
+
+可以使用  show status like '\%semi\%';来查看半同步状态
+
+当从库stop slvae后，会变成异步，
+
+半同步复制只与io线程有关，也就是说slave从库接收完二进制日志后会给一个master主库一个确认，但它并不会管relay-log中继日志是否执行完。
+
+rpl_semi_sync_master_timeout 超时时间不应太长，不然如果从库出了问题，提交一个事务commit后需要等待从库返回确认信息n毫秒后才会超时断开。。

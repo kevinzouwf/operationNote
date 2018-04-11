@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: red
+  lables:
+    color: red
+spec:
+  containers:
+    - image: janakiramm/color
+      name: red
+      env:
+        - name: "COLOR"
+          value: "red"
+      ports:
+        - containerPort: 8080
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: green
+  lables:
+    color: green
+spec:
+  containers:
+    - image: janakiramm/color
+      name: green
+      env:
+        - name: "COLOR"
+          value: "green"
+      ports:
+        - containerPort: 8080
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: blue
+  lables:
+    color: blue
+spec:
+  containers:
+    - image: janakiramm/color
+      name: blue
+      env:
+        - name: "COLOR"
+          value: "blue"
+      ports:
+        - containerPort: 8080

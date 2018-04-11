@@ -1,0 +1,23 @@
+dn: cn=LinuxCBT1,ou=people,dc=linuxcbt,dc=internal
+cn: LinuxCBT1
+sn: User
+mail: linuxcbt1@LinuxCBT.internal
+labeledURI: http://www.linuxcbt.internal
+roomNumber: One Stamford Plaza
+departmentNumber: Development
+telephoneNumber: 203-543-8979
+objectclass: inetOrgPerson
+
+
+#ldapmodify -D "cn=Manager,dc=linuxcbt,dc=internal" -x -a -W -f first_user_add.ldif
+#ldapadd -D "cn=Manager,dc=linuxcbt,dc=internal" -W -h localhost -x
+
+dn: cn=LinuxCBT2,ou=people,dc=linuxcbt,dc=internal
+cn: LinuxCBT2
+sn: User
+mail: linuxcbt2@LinuxCBT.internal
+labeledURI: http://www.linuxcbt.internal
+roomNumber: One Stamford Plaza
+departmentNumber: Development
+telephoneNumber: 203-543-8979
+objectclass: inetOrgPerson

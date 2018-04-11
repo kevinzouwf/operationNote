@@ -1,0 +1,29 @@
+---
+jsonrpc: "2.0"
+method: configuration.import
+params: 
+  format: xml
+  roles:
+    group: 
+      createMissing: True
+      updateExisting: True
+    graphs: 
+      createMissing: True
+      updateExisting: True
+
+    templates: 
+      createMissing: True
+      updateExisting: True
+    triggers: 
+      createMissing: True
+      updateExisting: True
+    items: 
+      createMissing: True
+      updateExisting: True
+    hosts: 
+      createMissing: True
+      updateExisting: True
+      deleteMissing: True
+  source: fo
+id: 1
+auth: self

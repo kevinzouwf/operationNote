@@ -1,0 +1,110 @@
+\documentclass[11pt,a4paper]{book}
+\usepackage{xltxtra}
+\usepackage{fontspec} %指定新罗马字体
+\usepackage{float}
+\usepackage{listings} % 代码
+\usepackage{xeCJK}  %指定中文字体
+\usepackage[top=0.8in,bottom=0.8in,left=1.2in,right=0.6in]{geometry}
+\usepackage[bookmarksnumbered,colorlinks,linkcolor=black,anchorcolor=black,citecolor=black]{hyperref}
+\usepackage{epigraph}
+\usepackage{amsmath}
+\usepackage{underscore} 
+\usepackage{indentfirst}
+\setlength{\parindent}{2em}
+\lstset{ 
+	frame=shadowbox,
+	numbers=left,
+	numberstyle=\tiny,
+	language=python,
+	stepnumber=1,
+	commentstyle=\small,
+	extendedchars=false,
+	escapeinside=`` ,
+	showstringspaces=false,
+	columns=fullflexible,
+	breaklines=true,                 % automatic line breaking only at whitespace
+	breakautoindent=true,%
+        breakindent=4em, %
+	captionpos=b,                    % sets the caption-position to bottom
+	tabsize=4,
+%	basicstyle=\ttm,
+}
+\setmainfont{Times New Roman}
+\setsansfont{Helvetica}
+\setmonofont{Courier}
+\setCJKmainfont[BoldFont={STXihei},ItalicFont={STKaiti}]{STSong}
+%\setCJKsansfont[BoldFont=STXihei]{STKaiti}
+%\setCJKmonofont{STSong}
+
+\title{linux从入门到放弃}
+\author{蔚雷}
+\date{\today}
+
+\usepackage{filecontents}
+\usepackage{biblatex}
+
+%\begin{filecontents}{mybib.bib}
+%@unpublished{Survey2014,
+%  title={Survey on the access to finance of enterprises},
+%  author={Sophie Doove and Petra Gibcus and Ton Kwaak and Lia Smit and Tommy Span},
+%  year=2014,
+%  note ={Accessed 16 June 2017. http://wwwe.ansa.it/documents/1415814222451\_Rapporto.pdf/ },
+%}
+%	@unpublished{
+%		tile={}
+%		}
+%% 在document使用链接
+%% \citet{Survey2014}
+%% \printbibliography
+%\end{filecontents}
+%\bibliography{mybib} 
+
+%\bibliographystyle{unsrt}
+%\bibliography{sample}
+
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents 
+
+\mainmatter
+
+\chapter*{Preface}
+
+运维工作四五年，所做之事已无乐趣，了无生趣，总结运维之事，安装系统，部署服务，改参数，调配置，部署代码，
+使用工具大致都相仿，什么shell,kickstart,cobbler,ansible,salt,nginx,apache,php,tomcat,keepalived,mysql,git,svn
+jenkins.等之类软件，用什么都不能说精，也不能说不会，昏昏沉沉一年过去，不闻其道，不见其神，只会其术，
+可谓一塌糊涂，这样下去无非是浪费时间，不如借此时机，把所学之事整理成成文，
+
+\input{./cobble/cobbler.tex}
+
+\input{./docker/docker-kubernetes.tex}
+
+%\input{./linuxBasic/linuxBase.tex}
+
+\begin{thebibliography}{9}
+\bibitem{latexcompanion} 
+Michel Goossens, Frank Mittelbach, and Alexander Samarin. 
+\textit{The \LaTeX\ Companion}. 
+Addison-Wesley, Reading, Massachusetts, 1993.
+ 
+\bibitem{einstein} 
+Albert Einstein. 
+\textit{Zur Elektrodynamik bewegter K{\"o}rper}. (German) 
+[\textit{On the electrodynamics of moving bodies}]. 
+Annalen der Physik, 322(10):891–921, 1905.
+ 
+\bibitem{knuthwebsite} 
+Knuth: Computers and Typesetting,
+\\\texttt{http://www-cs-faculty.stanford.edu/\~{}uno/abcde.html}
+
+\bibitem{execredirect}
+	丘迟: exec重定向以及io重定向
+	\\\texttt{http://xstarcd.github.io/wiki/shell/exec_redirect.html}
+
+\end{thebibliography}
+
+
+\end{document}

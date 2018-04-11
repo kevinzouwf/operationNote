@@ -1,0 +1,231 @@
+"vundle
+set rtp+=~/.vim/bundle/powerline/powerline/bindings/vim
+set nocompatible
+filetype off
+
+set rtp+=~/.vim/bundle/Vundle.vim
+call vundle#begin()
+
+Plugin 'VundleVim/Vundle.vim'
+Plugin 'Lokaltog/powerline', {'rtp': '~/.vim/bundle/powerline/powerline/bindings/vim'}
+"filesystem
+Plugin 'scrooloose/nerdtree'
+"Plugin 'scrooloose/nerdcommenter'
+Plugin 'Xuyuanp/nerdtree-git-plugin'
+"Plugin 'jistr/vim-nerdtree-tabs'
+Plugin 'kien/ctrlp.vim' "search file <C-P>
+
+"python sytax checker
+Plugin 'nvie/vim-flake8'
+Plugin 'vim-scripts/Pydiction'
+Plugin 'vim-scripts/indentpython.vim'
+Plugin 'scrooloose/syntastic'
+
+"auto-completion stuff
+"Plugin 'klen/python-mode'
+"Plugin 'davidhalter/jedi-vim'
+Plugin 'Valloric/YouCompleteMe'
+"Plugin 'klen/rope-vim'
+"Plugin 'ervandew/supertab'
+
+""code folding
+Plugin 'tmhedberg/SimpylFold'
+
+" class module
+Plugin 'majutsushi/tagbar'
+"Colors!!!
+Plugin 'altercation/vim-colors-solarized'
+Plugin 'jnurmine/Zenburn'
+
+call vundle#end()
+
+filetype plugin indent on    " enables filetype detection
+let g:SimpylFold_docstring_preview = 1
+
+"highlight cursor line and colum
+"set cursorline
+"set cursorcolumn
+" auto read and write
+"set autowrite
+"set autoread
+" for delete
+set backspace=2
+set backspace=indent,eol,start
+" set search
+set incsearch
+set hlsearch
+set ignorecase
+"nnoremap <silent> <C-,> : <C-u>nohlsearch<CR><C-l>
+set laststatus=2
+"tab navigation mapping
+map tn :tabn<CR>
+map tp :tabp<CR>
+map tm :tabm 
+map tt :tabnew 
+map ts :tab split<CR>
+map <C-S-Right> :tabn<CR>
+imap <C-S-Right> <ESC>:tabn<CR>
+map <C-S-Left> :tabp<CR>
+imap <C-S-Left> <ESC>:tabp<CR>
+
+"" simple recursive grep
+"" both recursive grep commands with internal or external (fast) grep
+"command! -nargs=1 RecurGrep lvimgrep /<args>/gj ./**/*.* | lopen | set nowrap
+"command! -nargs=1 RecurGrepFast silent exec 'lgrep! <q-args> ./**/*.*' | lopen
+"" mappings to call them
+"nmap ,R :RecurGrep
+"nmap ,r :RecurGrepFast
+"" mappings to call them with the default word as search text
+"nmap ,wR :RecurGrep <cword><CR>
+"nmap ,wr :RecurGrepFast <cword><CR>
+
+"set clase bode
+nmap <F2> :TagbarToggle<CR>
+let g:tagbar_autofocus = 1
+" set powerline
+let g:Powerline_symbols = 'fancy'
+set fillchars+=stl:\ ,stlnc:\
+
+
+call togglebg#map("<F5>")
+"colorscheme zenburn
+"set guifont=Monaco:h14
+"
+if has('gui_running')
+  set background=dark
+  colorscheme solarized
+else
+  colorscheme zenburn
+endif
+
+nnoremap <F4> :YcmForceCompileAndDiagnostics<CR>
+map <F3> :NERDTreeToggle<CR>
+
+"complete
+let g:ycm_autoclose_preview_window_after_completion=1
+let mapleader=" "
+map <leader>g  :YcmCompleter GoToDefinitionElseDeclaration<CR> 
+
+"I don't like swap files
+set noswapfile
+
+"turn on numbering
+"set nu
+
+"python with virtualenv support
+py << EOF
+import os.path
+import sys
+import vim
+if 'VIRTUA_ENV' in os.environ:
+  project_base_dir = os.environ['VIRTUAL_ENV']
+  sys.path.insert(0, project_base_dir)
+  activate_this = os.path.join(project_base_dir,'bin/activate_this.py')
+  execfile(activate_this, dict(__file__=activate_this))
+EOF
+
+"it would be nice to set tag files by the active virtualenv here
+":set tags=~/mytags "tags for ctags and taglist
+"omnicomplete
+autocmd FileType python set omnifunc=pythoncomplete#Complete
+
+"------------Start Python PEP 8 stuff----------------
+" Number of spaces that a pre-existing tab is equal to.
+au BufRead,BufNewFile *py,*pyw,*.c,*.h set tabstop=4
+
+"spaces for indents
+au BufRead,BufNewFile *.py,*pyw set shiftwidth=4
+au BufRead,BufNewFile *.py,*.pyw set expandtab
+au BufRead,BufNewFile *.py set softtabstop=4
+
+" Use the below highlight group when displaying bad whitespace is desired.
+highlight BadWhitespace ctermbg=red guibg=red
+
+" Display tabs at the beginning of a line in Python mode as bad.
+au BufRead,BufNewFile *.py,*.pyw match BadWhitespace /^\t\+/
+" Make trailing whitespace be flagged as bad.
+au BufRead,BufNewFile *.py,*.pyw,*.c,*.h match BadWhitespace /\s\+$/
+
+" Wrap text after a certain number of characters
+au BufRead,BufNewFile *.py,*.pyw, set textwidth=100
+
+" Use UNIX (\n) line endings.
+au BufNewFile *.py,*.pyw,*.c,*.h set fileformat=unix
+
+" Set the default file encoding to UTF-8:
+set encoding=utf-8
+
+" For full syntax highlighting:
+let python_highlight_all=1
+syntax on
+
+" Keep indentation level from previous line:
+autocmd FileType python set autoindent
+
+" make backspaces more powerfull
+set backspace=indent,eol,start
+
+
+"Folding based on indentation:
+autocmd FileType python set foldmethod=indent
+"use space to open folds
+nnoremap <space> za 
+"split navigations
+nnoremap <C-J> <C-W><C-J>
+nnoremap <C-K> <C-W><C-K>
+nnoremap <C-L> <C-W><C-L>
+nnoremap <C-H> <C-W><C-H>
+
+"----------Stop python PEP 8 stuff--------------
+
+"js stuff"
+autocmd FileType javascript setlocal shiftwidth=2 tabstop=2
+
+"---------- nerdtree setting -----------------
+let NERDTreeIgnore=['\.pyc$', '\~$'] "ignore files in NERDTree
+"autocmd vimenter * NERDTree  "start nerdtree when vim start
+autocmd vimenter * if !argc() | NERDTree | endif
+"autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
+"map <C-n> :NERDTreeToggle<CR>
+nmap ,t :NERDTreeFind<CR>
+"let NERDTreeWinSize=25 "setting win size 
+" 在终端启动vim时，共享NERDTree
+let g:nerdtree_tabs_open_on_console_startup=1
+" 显示书签列表
+"let NERDTreeShowBookmarks=1
+
+set nocompatible
+set t_Co=256
+ 
+"let g:minBufExplForceSyntaxEnable = 1
+ 
+
+" set git status in nerdtree
+let g:NERDTreeIndicatorMapCustom = {
+    \ "Modified"  : "✹",
+    \ "Staged"    : "✚",
+    \ "Untracked" : "✭",
+    \ "Renamed"   : "➜",
+    \ "Unmerged"  : "═",
+    \ "Deleted"   : "✖",
+    \ "Dirty"     : "✗",
+    \ "Clean"     : "✔︎",
+    \ 'Ignored'   : '☒',
+    \ "Unknown"   : "?"
+    \ }
+"set formatoptions-=cro
+" for paste
+"set paste
+"set nosmartindent
+"set noautoindent
+map <C-1> :set paste
+map <C-2> :set nopaste
+
+"if has('mouse')
+"	set mouse=a
+"endif
+
+nmap w= :resize +3<CR>
+nmap w- :resize -3<CR>
+nmap w, :vertical resize -3<CR>
+nmap w. :vertical resize +3<CR>

@@ -1,0 +1,4 @@
+#Objects to DELETE
+ou=people,dc=linuxcbt,dc=internal
+ou=engineering,dc=linuxcbt,dc=internal
+ou=sales,dc=linuxcbt,dc=internal

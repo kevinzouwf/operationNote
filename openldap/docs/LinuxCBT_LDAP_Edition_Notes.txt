@@ -1,0 +1,859 @@
+###Features###
+
+ 1. Centralized directory of useful information (user accounts, contacts, mail info, etc.)
+  a. Provides a Directory Information Tree (DIT) - hierarchy of data (resembles DNS)
+  a1. DNS provides a top-level '.', which is the root of the hierarchy
+  a2. DNS provides sub-level containers. i.e. '.com', '.net', '.co.uk', etc.
+  b. Objects within the directory are unique and may have attributes (fields)
+Note: LDAP DIT typically resembles: domain(DC) then OUs
+
+ 2. Optimized for Reads
+  a. You certainly can write to LDAP objects
+
+ 3. Redundant Configuration
+  a. Primary, secondary, tertiary, etc. servers
+  b. Writes take place on the 'primary' and changes are replicated to one or more partners
+
+ 4. Namespace is similar to DNS: i.e. dc=linuxcbt,dc=internal DNS(linuxcbt.internal)
+
+ 5. Supports AUTH encryption of clear-text AUTHs - LDAPS - TCP:636
+
+ 6. Supports StartTLS over regular TCP:389 LDAP port - secures entire connection
+
+ 7. Extensible - supports many attributes via schemas - /etc/openldap/schema
+
+ 8. Data storage is independent of LDAP: default is DBM
+
+ 9. Provides various tools: slap*(offline|back-end) - use when LDAP is NOT running
+
+10. Provides various tools: ldap*(online|daily admin)
+
+11. Separates binaries for: LDAP daemon (slapd) and replication (slurpd)
+
+
+###LDAP Concepts###
+
+1. Distinguished Names (DNs)
+ a. Each LDAP object has a DN within the DIT
+Note: This facilitates a hierarchy, which allows duplicate names in unique containers
+
+2. Object Class
+ a. Define type of attribute
+ b. Instances of schema group: i.e. ou=people is an instance of Organizational Unit group
+ c. dc = object class for the top-level domain: i.e. dc=linuxcbt,dc=internal
+
+3. Schemas - /etc/openldap/schema
+ a. Schemas define the supported: object classes and attribute
+
+Note: Schema defines the permissible object classes and attributes
+Note: Object class consists of one ore more attributes
+Note: Attributes are fields
+
+4. Attributes - Fields
+ a. Supports single/multiple values, depending on the schema definition
+ b. Attributes store values like variables in scripting/programming languages
+i.e. 'dc=linuxcbt,dc=internal" defines the attribute naming the domain
+i.e. 'dn: uid=linuxcbt,ou=people,dc=linuxcbt,dc=internal'
+i.e. RootDN - /etc/openldap/slapd.conf - name of user allowed to write to the DIT
+Note: 'RootDN' defaults to: 'cn=Manager,dc=linuxcbt,dc=internal'
+
+5. PAM - authenticates users on behalf of calling application - supports LDAP
+6. Name Service Switch (NSS) - used by applicatons to find common Unix databases: /etc/{passwd,shadow,group,hosts,services,protocols,etc}
+
+7. Both PAM & NSS work in conjunction to authenticate using LDAP (/etc/ldap.conf)
+
+
+###SUSE Config of LDAP###
+1. Explore current auth environment
+ a. connect to remote vanilla SUSE system (linuxcbtsuse2)
+ b. less /etc/nsswitch.conf (this file will be updated to use LDAP)
+
+
+2. Setup LDAP Environment
+ a. Install 'openldap2*' RPMs
+ b. Requires 'db42' RPM - Berkeley DB
+
+Note: Use package manager (YaST) to auto-resolve dependencies
+
+ c. Explore 'openldap2*' RPMs - rpm -qa | grep -i ldap
+ d. rpm -ql openldap2
+/etc/init.d/ldap - run-script (start|stop|restart|reload) - LDAP server
+/usr/sbin/rcldap - SUSE-specific run script for SLAPD
+/etc/init.d/slurpd - run-script for the replication daemon
+/usr/sbin/rcslurpd - SUSE-specific run scrip for SLURPD
+/etc/openldap/schema - top-level schema container
+/etc/openldap/slapd.conf - LDAP server config. file
+/usr/sbin/slap* - offline admin commands
+/var/lib/ldap - DB container
+
+ e. rpm -ql openldap2-client - contains client utilities
+/etc/openldap/ldap.conf - primary config file for LDAP online clients
+/usr/bin/ldap* - key LDAP online clients
+
+###Key Online Management Utilities###
+/usr/bin/ldapadd - used to add objects to DIT
+/usr/bin/ldapcompare - used to compare
+/usr/bin/ldapdelete - used to delete
+/usr/bin/ldapexop - export
+/usr/bin/ldapmodify - modify|add|delete
+/usr/bin/ldapmodrdn - modifies relative DN
+/usr/bin/ldappasswd - changes one's password
+/usr/bin/ldapsearch - used to search the Directory Information Tree (DIT)
+/usr/bin/ldapwhoami - used to return the current user
+
+ f. Explore and configure /etc/openldap/* environment
+ g. Update /etc/openldap/slapd.conf
+Update: suffix          "dc=my-domain,dc=com"
+TO: suffix          "dc=linuxcbt,dc=internal"
+
+###Super-User Info###
+#rootdn          "cn=Manager,dc=my-domain,dc=com"
+rootdn          "cn=Manager,dc=linuxcbt,dc=internal"
+rootpw          secret
+rootpw          abc123
+Note: 'Manager' from "cn=Manager,dc=linuxcbt,dc=internal" is case-insensitive
+
+ h. Ensure that PAM and NSS support is installed
+ Use 'YaST' to install the 2 packages
+
+ i. Ensure that LDAP clients are properly configured
+ yast
+
+ j. Start LDAP server - 'rcldap start'
+
+###Search the DIT###
+Two ways to search:
+ 1. 'ldapsearch' - included with openldap2-client* RPM
+ 2. LDAP Browser GUI in YaST
+
+###LDAPSEARCH###
+ldapsearch -x -b "dc=linuxcbt,dc=internal" "(objectclass=*)" - performs anonymous search for any object in the DIT
+
+###LDAP BROWSER###
+YaST -> Network Services -> LDAP Browser
+Authenticate using: rootDN (Administrator DN)
+
+###DIT Creation###
+Task: Create a DIT which resembles our drawing
+
+1. Create Root OU (Container) (DC) - using a pre-defined LDIF file - build_root_ou.ldif
+ a. ldapadd -D "cn=Manager,dc=linuxcbt,dc=internal" -W -x -f build_root_ou.ldif
+
+2. Create organizational units: people, engineering, sales
+ a. ldapadd -D "cn=Manager,dc=linuxcbt,dc=internal" -W -x -f Add_3_OUs.ldif
+
+3. Create some users
+Note: Users are based on: objectclass: inetOrgPerson
+ a. ldapadd -D "cn=Manager,dc=linuxcbt,dc=internal" -W -x -f first_user_add.ldif
+
+###Replication###
+
+Replication model permits changes to the master server
+
+Requires: LDAP (OpenLDAP) on all participating systems
+
+RedHat Requirements:
+ 1. OpenLDAP RPMs are installed - openldap*, nss_ldap*(includes PAM support)
+nss_ldap RPM uses - /etc/ldap.conf
+
+Steps to replication (regardless of distribution):
+ 1. Stop master LDAP server 'rcldap stop' /etc/init.d/ldap stop - takes offline
+ 2. Export the contents of the primary(master server) (DIT) to an LDIF file
+  Note: When the LDAP server is NOT running, use offline(slap*) tools
+  a. slapcat -b "dc=linuxcbt,dc=internal" -l linuxcbt.internal.ldif - perform on master 
+
+ 3. Update slapd.conf on the master(primary) server to support replication
+  a.
+replogfile /var/lib/ldap/slapd.replog
+replica host=linuxcbtserv4.linuxcbt.internal:389
+	suffix=dc=linuxcbt,dc=internal
+	binddn="cn=Manager,dc=linuxcbt,dc=internal"
+	credentials=abc123
+	bindmethod=simple
+	tls=no
+
+
+ 4. Copy and import DIT on slave server
+  a. scp linuxcbt.internal.ldif linuxcbtserv4:ldap/
+  b. Update DC information in slave server's: /etc/openldap/slapd.conf
+   Rootdn "cn=Manager,dc=linuxcbt,dc=internal"
+   Rootpw abc123
+   updatedn "cn=Manager,dc=linuxcbt,dc=internal"
+   updateref ldap://linuxcbtsuse2.linuxcbt.internal
+
+  c. slapadd -l linuxcbt.internal.ldif
+  d. Ensure that DB files in: /var/lib/ldap are owned by 'ldap.ldap'
+
+ 5. Update slapd.conf on the slave(secondary) server
+ 6. Update /etc/hosts on both machines
+  a. Master
+  b. Slave
+
+ 7. start slapd(LDAP process) on the slave(secondary/replica) server
+   a. (RedHat 5) 'service ldap start' OR /etc/init.d/ldap start
+  Note: Ensure that: /etc/openldap/slapd.conf is 'r' by 'ldap' group
+
+ 8. start slapd(LDAP process) on the master(primary) server
+   a. /etc/init.d/ldap start OR 'rcldap start'
+   b. ps -ef | grep -i ldap
+
+ 9. start slurpd(replication daemon) on the master(primary server)
+   a. rcslurpd start (important replication process)
+
+10. Ensure that services are set to start when the system reboots
+  a. chkconfig --list ldap
+  b. chkconfig ldap on
+  c. chkconfig --list slurpd
+  d. chkconfig slurpd on
+
+
+###Confirm LDAP records on Primary and Secondary systems###
+
+Task:
+ 1. Use 'ldapsearch' to confirm the existence of records on both systems
+  a. 'ldapsearch -x -b "dc=linuxcbt,dc=internal" "(objectclass=*)"'
+  b. 'ldapsearch -x -b "dc=linuxcbt,dc=internal" "(objectclass=*)" -h linuxcbtserv4'
+
+
+
+###Configure OpenLDAP on Solaris10###
+Task:
+ 1. Download and install required packages from: sunfreeware.com
+  a. pkgadd -d 'package_name (gunzipped)'
+Note: slurpd is currently being deprecated, but you should still understand how to configure it
+Note: Config files are located beneath: /usr/local/etc/openldap
+Note: 'slapd' is located in: /usr/local/libexec
+
+ 2. Configure Solaris as a replica
+  a. Update slapd.conf on the master server - copy 'replica' block and rename for new server
+  b. Update slapd.conf on the slave server - copy changes from existing replica server and modify to match the Solaris system
+  c. update: /etc/hosts on Solaris system to be able to find the master LDAP server
+  d. Export current DIT:
+
+Note: Stop LDAP server (master) first
+slapcat -b "dc=linuxcbt,dc=internal" -l linuxcbt.internal.ldif - perform on master 
+
+  e. Import DIT on Solaris system
+   e1. 'scp linuxcbt.internal.ldif linuxcbtsun1:ldap/'
+   e2. 'slapadd -l linuxcbt.internal.ldif'
+
+  f. Start SLAPD on Solaris
+   f1. /usr/local/libexec/slapd
+
+  g. Start slapd and slurpd
+
+
+###LDAPADD###
+Features:
+ 1. Facilitates the addition of objects to the DIT
+ 2. 'ldapadd' is a symlink to 'ldapmodify -a'
+Note: 'ldapmodify' performs the same functions as 'ldapadd'
+ 3. Default invocation reads attributes from STDIN
+
+Tasks:
+ 1. Add user 'LinuxCBT1' to remaining OUs
+  a. 'ldapadd -D "cn=Manager,dc=linuxcbt,dc=internal" -x -W' - prompts on STDIN for value(s)
+Note: If you try to add a duplicate user, the DIT will deny the entry
+  b. supply LDIF info for creation of user object on STDIN
+  c. execute 'CTRL-D' when complete
+  d. confirm results with ldapsearch
+
+ 2. Add users 'LinuxCBT3,LinuxCBT4,LinuxCBT5' to the DIT, wholesale, via STDIN from slave server
+  a. 'ldapadd -D "cn=Manager,dc=linuxcbt,dc=internal" -x -W' - prompts on STDIN for value(s)
+
+Note: The slave server auto-redirected the 'ldapadd' request to the primary server
+Note: updateref ldap://linuxcbtsuse2.linuxcbt.internal - this /etc/openldap/slapd.conf entry caused the 'ldapadd' write request to be redirected to the DIT master (linuxcbtsuse2)
+
+Note: ldapsearch -x -b "dc=linuxcbt,dc=internal" "(objectclass=*)" -h linuxcbtsuse2 - forces 'ldapsearch' to query the DIT master
+
+
+ 3. Use LDAP Browser to view DIT and to make changes
+Note: LDAP Browser is an easy way to learn the attributes supported by various schemas
+
+
+ 4. Add 5 users to 2 OUs (Engineering & Sales) via text file
+  a. ldapadd -D "cn=Manager,dc=linuxcbt,dc=internal" -x -W -h linuxcbtsuse2 -f Add_5_Users_to_Engineering_and_Sales_OUs.ldif
+
+ 5. Confirm results using:
+  a. ldapsearch
+  b. LDAP Browser
+
+
+###LDAP Delete###
+Features:
+ 1. A means to remove DIT objects
+
+Usage:
+
+Tasks:
+1. Delete an object from the command line
+ a. ldapdelete -D "cn=Manager,dc=linuxcbt,dc=internal" -W -h linuxcbtsuse2 -v "DN_to_Delete"
+ b. ldapdelete -D "cn=Manager,dc=linuxcbt,dc=internal" -W -h linuxcbtsuse2 -v "cn=LinuxCBT5,ou=sales,dc=linuxcbt,dc=internal" -x
+
+2. Delete objects wholesale from: ou=sales,dc=linuxcbt,dc=internal - via STDIN
+Note: Delete using the 'DN' of an object
+
+3. Delete non-existing and existing items
+Note: Default behavior of LDAP online tools is to abort at the step that fails
+
+ldapdelete -D "cn=Manager,dc=linuxcbt,dc=internal" -W -h linuxcbtsuse2 -v "cn=LinuxCBT5,ou=sales,dc=linuxcbt,dc=internal" -x -c
+Note: '-c' option continues even if errors are encountered
+
+4. Delete remaining OUs and objects via file
+ a. ldapdelete -D "cn=Manager,dc=linuxcbt,dc=internal" -W -h linuxcbtsuse2 -v "ou=people,dc=linuxcbt,dc=internal" -x
+ b. ldapdelete -D "cn=Manager,dc=linuxcbt,dc=internal" -W -h linuxcbtsuse2 -v "cn=LinuxCBT5,ou=sales,dc=linuxcbt,dc=internal" -x -c -f Delete_Remaining_Items.ldif
+
+Note: use '-v' to enable 'ldap*' commands in verbose mode
+
+
+###LDAPMODIFY###
+Features:
+ 1. Functionality found in:
+  a. ldapadd
+  b. ldapdelete
+  c. ldapmodify
+
+ 2. Manipulates objects in DIT
+
+
+Tasks:
+ 1. Rebuild the DIT - create top-level OUs and users/OUs
+  a. ldapmodify -D "cn=Manager,dc=linuxcbt,dc=internal" -x -W -a -v -f Add_3_OUs.ldif
+  b. ldapmodify -D "cn=Manager,dc=linuxcbt,dc=internal" -x -W -a -v -f filename.ldif -h primary_LDAP_server
+
+
+ 2. Modify Attributes
+  a. ldapmodify -D "cn=Manager,dc=linuxcbt,dc=internal" -x -W -h linuxcbtsuse2 -v -f
+
+Note: It's easier to reference modification changes via text file, than on the command-line
+
+
+ 3. Delete Items
+  a. ldapmodify -D "cn=Manager,dc=linuxcbt,dc=internal" -x -W -v -f modify_delete*ldif
+Note: Simply update 'changetype' in supplied file to: 'delete'
+
+  b. ldapmodify -D "cn=Manager,dc=linuxcbt,dc=internal" -x -W -v -c -f Add_5_*
+This will ignore errors by continuing
+
+###LDAP SEARCH###
+Features:
+ 1. Ability to search the DIT
+ 2. Supports Boolean Operators: &(AND), |(OR), !(NOT) - Using prefix notation
+ 3. Supports Wildcards: *, +(internal operations)
+
+Usage:
+ 1. ldapsearch [options] "(attribute filteroperator value)"
+
+Filter Operators:
+ 1. =(string comparisons)
+ 2. <, >, <=, >=
+ 3. ~= (regex match for approimate results)
+
+Value(s):
+ 1. Absolute string: i.e. 'LinuxCBT1'
+ 2. Wildcard: i.e. 'Linux*'
+
+Tasks:
+ 1. Search specifict OUs for information
+  a. ldapsearch -b "dc=linuxcbt,dc=internal" -h linuxcbtsuse2 -x "(objectclass=*)" - searches the DIT for everything - returning ALL objects
+  b. ldapsearch -b "ou=people,dc=linuxcbt,dc=internal" -x -h linuxcbtsuse2 "(objectclass=*)" - searches 'ou=people,dc=linuxcbt,dc=internal' specifically
+
+
+ 2. Search the DIT for Organizational Units (OUs)
+  a. ldapsearch -b "dc=linuxcbt,dc=internal" -h linuxcbtsuse2 -x "(objectclass=organizationalUnit)" - searches for OUs throughout the DIT
+
+Note: Most attributes are case-insensitive, however, consult schema for more details
+
+ b. ldapsearch -b "dc=linuxcbt,dc=internal" -h linuxcbtsuse2 -x "(objectclass=inetOrgPerson)" - this dumps ALL users throughout the DIT
+ c. ldapsearch -b "ou=people,dc=linuxcbt,dc=internal" -h linuxcbtsuse2 -x "(objectclass=inetOrgPerson)"
+
+ 3. Use Boolean Operators
+  a. ldapsearch -b "ou=people,dc=linuxcbt,dc=internal" -h linuxcbtsuse2 -x "(&(cn=LinuxCBT1) (sn=User))" - searches ou=people,dc=linuxcbt,dc=internal for object with: 'cn=LinuxCBT1' & 'sn=User'
+Note: This search is case-insensitive
+
+  b. ldapsearch -b "ou=people,dc=linuxcbt,dc=internal" -h linuxcbtsuse2 -x "(&(cn=Linux*) (sn=User))" - wildcard search
+
+  c. ldapsearch -b "ou=people,dc=linuxcbt,dc=internal" -h linuxcbtsuse2 -x "(|(cn=LinuxCBT1) (cn=LinuxCBT2))"
+
+  d. ldapsearch -b "ou=people,dc=linuxcbt,dc=internal" -h linuxcbtsuse2 -x "(telephoneNumber=203-543-8979)"
+
+  e. ldapsearch -b "ou=people,dc=linuxcbt,dc=internal" -h linuxcbtsuse2 -x "(cn~=linuxcbt)"
+
+
+
+###Logging/Debugging###
+Features:
+ 1. Logs using SysLog (defaults to: LOCAL4)
+ 2. Includes ldap searches as well as starts/stops/etc.
+
+SUSE10 Configuration:
+LOCAL4 -> /var/log/localmessages
+Syslog-NG Config: /etc/syslog-ng/syslog-ng.conf
+
+Debugging:
+Update: /etc/sysconfig/openldap to adjust debugging default (STDOUT)
+OPENLDAP_SLAPD_PARAMS="-d <integer>"
+
+ Loglevel <integer> (-1-32768)
+ -1 (ALL Debugging) '-d -1'
+ 0 (No Debugging) '-d 0'
+ 1 (Trace)
+ 2 (packet handling)
+ 4 (heavy trace) more verbose than loglevel 1
+ 8 (connection management)
+16 (packets sent/received)
+32 (search filter processing)
+64 (config file processing) (slapd.conf)
+128 (ACL processing)
+256 (stats log connections/operations/results)
+512 (stats log entries sent)
+1024 (prints the communications with the shell back-ends)
+2048 (print entry parsing debugging)
+
+
+Task:
+ 1. Setup Syslog logging on RH5 box
+  a. /etc/syslog.conf
+local4.* /var/log/ldap.log
+
+ 2. Setup Syslog logging on Solaris box
+  a. /etc/syslog.conf
+local4.* /var/log/ldap.log
+
+Task:
+ 1. Purposely misname a slapd.conf directive
+
+
+###LDIF Format###
+Features:
+ 1. Standard import/export format returned by LDAP tools (offline/online)
+ 2. RFC-2849
+ 3. Very similar to name/value pairs from programming/scripting environments
+  a. Name = attribute: i.e. dn, sn, cn, etc.
+  b. Value = value: i.e. cn=LinuxCBT1,ou=people,dc=linuxcbt,dc=internal
+
+Tasks:
+ 1. ldapsearch - dumps DIT to STDOUT
+  a. one attribute per line
+  b. lines may exceed a single line, if the next line begins with space or tab
+  c. Multiple attributes are represented on multiple lines
+  d. Every object in the DIT MUST have at least one 'objectClass' attribute, which defines the template(schema) to be used for the object
+
+ 2. Add 'TestUser1' to the DIT
+
+Note: A misconfiguration in slapd.conf, which causes 'slapd' to stop, will not impact 'slurpd'
+  a. ldapadd -D "cn=Manager,dc=linuxcbt,dc=internal" -wabc123 -x
+  b. ldapdelete -D "cn=Manager,dc=linuxcbt,dc=internal" -W -x "cn=TestUser1,ou=people,dc=linuxcbt,dc=internal"
+  c. ldapmodify
+
+Note: If unfamiliar with LDIF format, begin with ldapsearch
+
+
+###Schemas###
+Features:
+ 1. The definition of fields that constitute an object
+
+On SUSE and RH5: Located beneath: /etc/openldap/schema
+On Solaris: /usr/local/etc/openldap/schema 
+
+Note: /etc/openldap/slapd.conf is read by 'slapd' process, which imports one or more schemas from: /etc/openldap/schema upon invocation
+
+/etc/openldap/schema/core.schema - first schema loaded
+Note: schema files are dependent, which means, the order in which they're loaded matters
+
+Notes:
+ 1. Attributes have short and long names: i.e. 'c' = 'countryName', 'cn' = 'commonName'
+ 2. 'SUP name' means, the higher-level (parent) attribute 'name' governs 'st' attribute
+ 3. LDAP objects support single-inheritances
+ 4. Rules inherited from a parent object flow downward to the child object
+
+attributetype ( 2.5.4.9 NAME ( 'street' 'streetAddress' )
+        DESC 'RFC2256: street address of this object'
+        EQUALITY caseIgnoreMatch
+        SUBSTR caseIgnoreSubstringsMatch
+        SYNTAX 1.3.6.1.4.1.1466.115.121.1.15{128} )
+
+EQUALITY caseIgnoreMatch - governs whether searches are case-sensitive
+
+/etc/openldap/schema/inetorgperson.schema - represents common user-object fields
+
+MAY = optional attribute
+MUST = required attribute
+
+Task:
+ 1. Created LDAP user based on additional: core.schema attributes
+
+
+###Migrate SUSE Box to LDAP from /etc/* Files###
+Features:
+ 1. Ability to take advantage of LDAP authentication
+ 2. Facilitates the sharing of most /etc/* tabular databases (/etc/hosts|/etc/group|/etc/services|etc.)
+ 3. SUSE Linux provides YaST for migrating to LDAP
+
+
+Task:
+ 1. Setup LDAP auth of users/groups
+  a. YaST -  ssh -X root@linuxcbtsuse2 - exports X.org to local system
+  b. Navigate to - Network Services - LDAP Client
+
+LDAP Client Settings - /etc/ldap.conf:
+User Map -> /etc/passwd
+Password Map -> /etc/shadow
+Group Map -> /etc/group
+
+ 2. Create a new LDAP user
+  a. Use YaST
+
+
+###Setup RH5 to use LDAP###
+Features:
+ 1. Ability to support both local (/etc/passwd) and distributed (LDAP) users
+
+Note: Components are identical to SUSE Linux
+ 1. PAM
+ 2. NSS
+ 3. LDAP Client
+
+Note: Use 'system-config-authentication' to setup LDAP auth on RH5
+
+Task:
+ 1. Setup LDAP
+  a. Connect using SSH with X.org redirection: ssh -X root@linuxcbtserv4
+  b. launch 'system-config-authentication'
+  c. Enable 'create home directory upon first login'
+  d. Enable 'LDAP' in auth and user information screens
+  e. ensure that /etc/hosts resolution is in order
+
+Note: system-config-authentication updates the following files:
+ 1. /etc/nsswitch.conf (Name Service Switch configuration)
+  a. passwd:     files ldap (use: /etc/{passwd,shadow}, then, LDAP)
+
+ 2. /etc/ldap.conf (LDAP client configuration)
+ 3. /etc/pam.d/system-auth-ac
+
+ 2. Test LDAP connectivity using SSH from slave LDAP host
+  a. ssh linuxcbtldap1@localhost
+
+Note: 'ldapsearch...' returns the recently-created LDAP user: linuxcbtldap1
+Note: It's important to maintain 'root' and perhaps one additional account in the local database of each server, in the event of LDAP DB/server corruption/unavailability
+
+
+Note: Migration scripts are in: /usr/share/opendlap/migration
+
+ 3. Create new LDAP user and authenticate to both hosts: linuxcbtsuse2 & linuxcbtserv4
+  a. YaST
+
+
+###Migration of Local Accounts (/etc/passwd) TO: LDAP###
+Features:
+ 1. Ability to migrate users/records from flat files to LDAP
+ 2. http://www.padl.com/OSS/MigrationTools.html (makers of: pam_ldap.so & nss_ldap.so)
+
+Tasks:
+ 1. Download, extract and configure scripts
+  a. tar -xzvf MigrationTools.tgz
+  b. Update: migrate_common.ph
+ 
+
+ 2. Create local users on SUSE and RH5 boxes
+  a. 'lcbtsuse2local1' 'lcbtrhlocal1'
+
+ 3. Migrate those users to LDAP
+
+Note: Users created in: /etc/passwd (local user accounts database) are NOT automagically imported by LDAP: This MUST be done manually
+
+  a. ./migrate_passwd.pl /etc/passwd linuxcbtsuse2.passwd.ldif
+Note: This creates an LDIF-compliant file for import into LDAP
+  b. ldapadd -D "cn=Manager,dc=linuxcbt,dc=internal" -x -W -f linuxcbtsuse2.passwd.ldif
+  c. ldapsearch... - to confirm the new LDAP users from the Master LDAP server
+  d. Attempt to SSH into both systems using newly-created LDAP entry: lcbtsuse2local1
+
+Note: SUSE-config is not set to auto-create user's home directory
+
+  e. Copy PADL migration tools to slave LDAP server
+  f. Export /etc/passwd to STDOUT on slave LDAP server
+  g. use 'ldapadd' with STDIN to import LDIF entry for user: lcbtrhlocal1 into master LDAP server's DIT
+  h. test connectivity to both hosts using: ssh lcbtrhlocal1@localhost
+
+Note: use 'getent passwd' to enumerate available users
+
+###Solaris10 Migration###
+Features:
+ 1. Permits Solaris10 box to authenticate users against: local(/etc/passwd) and LDAP
+ 2. Solaris10 (OpenLDAP) can participate in directory-based user authentication
+
+Steps:
+ 1. Ensure that Solaris10 (OpenLDAP) loads similar schemas in: slapd.conf
+
+include         /usr/local/etc/openldap/schema/cosine.schema
+include         /usr/local/etc/openldap/schema/inetorgperson.schema
+
+ 2. Restart SLAPD
+  a. kill `cat /usr/local/var/run/slapd.pid`
+  b. /usr/local/libexec/slapd
+  c. ldapsearch* - to reveal users in DIT
+
+ 3. Use 'ldapclient' to configure the Solaris10 box as an LDAP client
+Note: 'ldapclient' prepares Solaris10 box to be and LDAP client and it copies: /etc/nsswitch.ldap to: /etc/nsswitch.conf
+
+Note: use 'man ldapclient' to learn about various config options
+
+ldapclient -v manual -a defaultServerList="192.168.75.19 192.168.75.21" -a defaultSearchBase=dc=linuxcbt,dc=internal -a authenticationMethod=simple -a defaultSearchScope=sub -a proxyDN=cn=Manager,dc=linuxcbt,dc=internal -a proxyPassword=abc123 -a serviceAuthenticationMethod=pam_ldap:simple
+
+  b. Use 'ldapclient list' to confirm LDAP client configuration
+  c. Tweak '/etc/nsswitch.conf' for performance
+  d. Use 'getent passwd' to enumerate local and LDAP users
+
+ 4. Update PAM Configuration
+  a. Backup existing /etc/pam.conf file and copy pre-defined /etc/pam.conf.ldap file to /etc/pam.conf
+
+Note: Changes to PAM take effect immediately as PAM represents a collection modules that are referenced at run-time by the calling application: i.e. SSH, login, Apache, etc.
+
+ 5. Attempt SSH-based login, which will authenticate using LDAP
+  a. ssh lcbtrhlocal1@localhost
+  b. Setup environment for LDAP user: 'mkdir /home/lcbtrhlocal1 && chown lcbtrhlocal1 /home/lcbtrhlocal1'
+
+
+###Migrate Other Tables###
+Features:
+ 1. Shared records via LDAP DIT
+
+Task:
+ 1. Migrate: /etc/group to LDAP DIT
+  a. ./migrate_group.pl /etc/group (dumps to STDOUT groups)
+  b. ./migrate_group.pl /etc/group > groups.suse2.ldif
+  c. ldapadd -D "cn=Manager,dc=linuxcbt,dc=internal" -x -W -f groups.suse2.ldif
+
+Note: In SUSE Linux, replace 'rfc2307bis.schema' with 'nis*schema' in slapd.conf
+Note: restart SLAPD to enable changes
+
+  d. Confirm the existence of groups using: ldapsearch
+ldapsearch -x -b "ou=Group,dc=linuxcbt,dc=internal" "(objectclass=*)" -h linuxcbtsuse2.linuxcbt.internal
+
+  e. Use 'getent group' to confirm LDAP groups
+   1. Test on LDAP slaves
+
+
+ 2. Migrate: /etc/hosts to LDAP DIT
+  a. Use:  'migrate_base.pl' to create various OUs
+
+dn: ou=Hosts,dc=linuxcbt,dc=internal
+ou: Hosts
+objectClass: top
+objectClass: organizationalUnit
+  b. Use: 'migrate_hosts.pl' to import /etc/hosts/entries
+  c. Use: 'ldapadd' to import
+ldapadd -D "cn=Manager,dc=linuxcbt,dc=internal" -x -W -f hosts.suse2.ldif -c
+Note: Enable 'continuous mode (-c)' if necessary
+
+  d. Update: NSSWITCH Configuration: /etc/nsswitch.conf
+  e. use: 'getent hosts'
+
+ 3. Migrate: /etc/services
+  a. Create 'Services' OU using 'migrate_base.pl'
+
+
+ 4. Migrate: /etc/protocols
+  a. Create 'Protocols' OU using 'migrate_base.pl'
+
+###Rebuild of DIT###
+
+Tasks:
+  1. Purge existing DIT using 'ldapdelete'
+   a. 'ldapdelete -D "cn=Manager,dc=linuxcbt,dc=internal" -v -x -r 'ou=people,dc=linuxcbt,dc=internal' -W
+
+Note: Update Solaris to process 'posixGroup' object class by referencing: nis.schema
+
+   b. 'ldapdelete -D "cn=Manager,dc=linuxcbt,dc=internal" -v -x -r -W -f OUs_to_Delete_Recursively.ldif -h linuxcbtsuse2.linuxcbt.internal
+
+ 2. Rebuild OUs (people & group)
+  a. Create DIT file with ALL objects from ALL boxes
+  b. Use: 'ldapadd' to re-create the DIT
+'ldapdadd -D "cn=Manager,dc=linuxcbt,dc=internal" -v -x-W -f Create_DIT.ldif -h linuxcbtsuse2.linuxcbt.internal
+
+  c. Use: 'ldapsearch' and 'getent' to confirm LDAP DIT entries
+
+
+###Account Maintenance###
+
+Task:
+ 1. Create a user named 'projuser1' - derived from LDIF output
+Note: Use LDIF info. from existing account using 'ldapsearch'
+  a. Use: 'ldapadd' to add user to DIT
+
+
+ 2. Create a group named 'projectx' - derived from LDIF output
+  a. Use: 'ldapadd' to add group to DIT
+
+ 3. Create a directory: /projectx - for members of the LDAP group: 'projectx'
+   a. mkdir /projectx
+   b. chgrp projectx /projectx
+   c. chmod 775 /projectx
+
+ 4. Confirm user: projuser1 is unable to write to: /projectx
+
+ 5. Use: 'ldpasswd' to assign a password to the user: 'projuser1'
+  a. ldappasswd -D "cn=manager,dc=linuxcbt,dc=internal" -x -v -W "uid=projuser1,ou=People,dc=linuxcbt,dc=internal"
+
+Note: Default behavior of 'ldappasswd' is to auto-generate a password
+
+
+ 6. Add user: 'projuser1' to group: 'projectx'
+  a. ldapmodify -D "cn=manager,dc=linuxcbt,dc=internal" -x -v -W 
+  b. Use: ldapsearch or getent to confirm
+
+ 7. Change users' passwords:
+  a. ldappasswd -D "cn=manager,dc=linuxcbt,dc=internal" -v -x -W -s abc123 "uid=projuser1,ou=People,dc=linuxcbt,dc=internal"
+  b. ldappasswd -D "cn=manager,dc=linuxcbt,dc=internal" -v -x -W -S "uid=projuser1,ou=People,dc=linuxcbt,dc=internal"
+
+
+ 8. Change Relative Distinguished Name (RDN) of an object
+  a. ldapmodrdn -D "cn=manager,dc=linuxcbt,dc=internal" -x -v -r -W uid=projuser1,ou=People,dc=linuxcbt,dc=internal uid=projuser2
+
+  b. ldapmodrdn -D "cn=manager,dc=linuxcbt,dc=internal" -x -v -r -W cn=projectx,ou=Group,dc=linuxcbt,dc=internal cn=projecty
+
+
+###Replication with SyncRepl###
+Features:
+ 1. More efficient and reliable than SLUPD-based replication
+ 2. Implemented as a slapd thread
+ 3. Push/Pulls are supported:
+  a. Push(refreshAndPersist) - close to real-time replication option
+Note: Use 'refreshAndPersist' method in well-connected environments
+  b. Pull(refreshOnly) - updates consumer(client) DIT on intervals
+
+ 4. Provider (Master) & Consumers(clients) relationship
+ 5. Also supports cascading configurations: Provider -> Secondary Provider(s) -> Consumer(s)
+Note: By contrast, SLURPD restricts us to single-master replication
+ 6. Configuration is defined primarily on 'consumer' servers, NOT the provider
+Note: None-to-few changes are required on the provider
+ 7. Specific queries(searches) can be replicated, including specific attributes
+ 8. SyncRepl is search-based - searches define what gets replicated - search criteria is identical to that of: 'ldapsearch'
+ 9. Uses built-in LDAP Content Sync protocol
+10. Replication is incremental
+
+Tasks:
+ 1. Configure SyncRepl on our RH5 box
+  a. disable SLURPD replication alltogether on the Master server: linuxcbtsuse2
+  b. Delete DIT on one or more slave servers 
+ldapdelete -D "cn=Manager,dc=linuxcbt,dc=internal" -v -x -r 'dc=linuxcbt,dc=internal' -W
+  c. Confirm the deletion with: ldapsearch
+  d. Configure consumer(client) to use syncrepl
+  
+Index objectclass,entryCSN,entryUUID eq
+syncrepl rid=001
+	provider=ldap://linuxcbtsuse2.linuxcbt.internal:389
+	type=refreshOnly
+	interval=01:00:00:00
+	retry="60 10"
+	searchbase="dc=linuxcbt,dc=internal"
+	filter="(objectClass=*)"
+	scope=sub
+	bindmethod=simple
+	binddn="cn=manager,dc=linuxcbt,dc=internal"
+	credentials="abc123"
+
+ 2. Create new object on provider
+
+
+ 3. Replicate SyncRepl configuration on Solaris10
+
+syncrepl rid=002
+	provider=ldap://linuxcbtsuse2.linuxcbt.internal:389
+	type=refreshOnly
+	interval=00:00:00:05
+	retry="60 10"
+	searchbase="dc=linuxcbt,dc=internal"
+	filter="(objectClass=*)"
+	scope=sub
+	bindmethod=simple
+	binddn="cn=manager,dc=linuxcbt,dc=internal"
+	credentials="abc123"
+
+  a. Manually wipe the Solaris10 LDAP DB directory
+
+ 4. Provider Configuration - update provider(master) in the DB section of: slapd.conf
+  Overlay syncprov
+  Syncprov-checkpoint 100 10
+  Syncprov-sessionlog 100
+
+
+###ACLs with OpenLDAP###
+Features:
+ 1. General and granular restrictions
+ 2. First match wins (top-down)
+ 3. Implicit: 'by * none' at the end of ACLs, which denies access
+ 4. ACLs are stored in: slapd.conf
+
+Template:
+ Subject(who) - Permission(level of access) - Object(what)
+'access to <what> by <who> <permission>'
+
+Subject: '*', 'self', 'anonymous(non-authenticated)', 'users(authenticated)', 'dn=...'
+Permissions: 'write', 'read', 'search', 'compare', 'auth', 'none'
+Object: '*', 'dn.children="ou=people"'
+
+Task:
+ 1. Examine the Default ACL
+
+ 2. Restrict DIT access to 'authenticated users' - NO Anonymous Access
+  'access to * by users read'
+Note: 'Restart/reload OpenLDAP after making ACL changes'
+  a. 'ldapsearch as authenticated user'
+
+ 3. Allow 'anonymous' access to 'hosts' OU and nothing else
+  a. 'access to dn.children="ou=hosts,dc=linuxcbt,dc=internal" by * read'
+  b. 'access to * by users read'
+
+
+ 4. Restrict access on an attribute level
+  a. 'access to attrs=loginShell by * none' 
+  b. access to attrs=loginShell,uid
+        by self read
+        by * none
+
+Note: ACLs apply on a per-server basis
+Note: Copy ACLs to replication partners if necessary
+
+
+
+###OpenLDAP with SSL/TLS Encryption###
+Features:
+ 1. Encrypted communications (default LDAP communications is sent via clear-text)
+ 2. SSL binds, by default, to TCP:636 - i.e. URI: ldaps://hostname
+ 3. TLS uses the default TCP:389 (StartTLS) - i.e. URI: ldap://hostname
+
+Tasks:
+ 1. Launch an 'ethereal' session in conjunction with 'tcpdump'
+  a. 'tcpdump -v -i eth0 -w ldapdump.1 port 389'
+  b. Use 'ethereal' to parse TCPDump capture
+
+ 2. Enable SSL/TLS Encryption on the primary server
+  a. generate a keypair using 'openssl'
+Note: Ensure that 'openssl' package is installed
+'openssl req -newkey rsa:1024 -x509 -nodes -out ldap_pubkey.pem -keyout ldap_privatekey.pem -days 365'
+Note: When generating x509 certificate keypair, ensure that the Common Name (cn) attribute of the certificate reflects the FQDN of the target OpenLDAP server
+
+  b. Configure: slapd.conf to initiate TLS/SSL communications
+TLSCertificateFile /etc/openldap/ldap_pubkey.pem
+TLSCertificateKeyFile /etc/openldap/ldap_privatekey.pem
+
+  c. On SUSE Linux, update: /etc/sysconfig/openldap
+set: OPENLDAP_START_LDAPS="yes"
+
+  d. restart OpenLDAP
+
+  e. confirm SSL & TLS connectivity
+   a. netstat -ntlp | grep slap
+   b. ldapsearch -H ldaps://linuxcbtsuse2.linuxcbt.internal
+
+  f. 
+   a. ldapsearch -Z -H ldap://linuxcbtsuse2.linuxcbt.internal
+   b. ldapsearch -ZZ -H ldap://linuxcbtsuse2.linuxcbt.internal
+
+ 3. Configure RedHat system with SSL/TLS
+  a. generate SSL/TLS keypair
+  b. update slapd.conf
+  c. update /etc/sysconfig/ldap
+   a. 'SLAPD_LDAPS=yes'
+

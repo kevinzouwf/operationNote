@@ -1,0 +1,72 @@
+
+mysql指定的库.表的互相同步
+
+最近项目要上线，还有2天时间(擦，从库还没买呢，时间有点紧)，CTO与开发提出的需求是：
+	1 不同地区访问不同的数据库，双写，但只有指定的库的其中几个表要双写互相同步
+	原因是某些不重要的表数据太大，没必要同步。
+
+需求解释：
+	1 两个库做双主双写
+	2 双主双写的只是一个库的其中的几个表
+	3 建表时要设置自增ID
+实验测试：
+
+主1的配置(重要的，其他略)
+
+log-bin = mysql-bin					#必须要有binlog
+
+auto_increment_offset = 1 			#自增ID的初始值
+auto_increment_increment = 2 		#自增ID的步长(每次自动增加的数)
+
+server-id=1							#server-id 主库从库要不同	
+
+replicate-do-db=haha 				#作为slave时（SQL线程）将要复制(同步)的数控库
+replicate-wild-do-table=haha.user	#作为slave时（SQL线程）将要复制(同步)的数控库
+									#以上两个配合使用，就指定只有该表同步了
+
+master-host = 192.168.56.14			# 设置master的参数，略
+master-user = rep
+master-password = 123321
+master-port = 3306
+
+除此之外你的业务也要有相应的配置，也就是说(要同步的)数据库的表要设置自增ID，如
+mysql> create table user(
+    -> userid int(4) primary key not null auto_increment,
+    -> username varchar(16) not null,
+    -> userpassword varchar(32) not null
+    -> );
+如上例中的 auto_increment
+
+主2的配置
+
+log-bin = mysql-bin					#必须要有binlog
+
+auto_increment_offset = 2 			#自增ID的初始值，注意和主区别
+auto_increment_increment = 2 		#自增ID的步长(每次自动增加的数)
+
+server-id=2							#server-id 主库从库要不同	
+
+replicate-do-db=haha 				#作为slave时（SQL线程）将要复制(同步)的数控库
+replicate-wild-do-table=haha.user	#作为slave时（SQL线程）将要复制(同步)的数控库
+									#以上两个配合使用，就指定只有该表同步了
+									#多个表就写多个,如haha.user123
+master-host = 192.168.56.13			# 设置master的参数，略
+master-user = rep
+master-password = 123321
+master-port = 3306
+
+重启数据库，重启slave线程
+
+测试，达到需求.
+
+思想：不要在主库使用 --binlog-do-db 和 --binlog-ignore-db 来限制从库要复制库
+		要在从库使用replicate-do-db 和 replicate-wild-do-table 限制同步的库
+		
+详情请看：	http://dev.mysql.com/doc/refman/5.1/en/replication-rules.html
+			http://coolnull.com/3145.html
+			http://www.oschina.net/question/54100_8957?fromerr=HKDnYtsK
+			https://www.percona.com/blog/2009/05/14/why-mysqls-binlog-do-db-option-is-dangerous/
+感谢大鹏技术圈-大鹏的细心讲解，总结文档献上，多多指教。
+
+
+

@@ -1,0 +1,25 @@
+apiVersion: "v1" #mandatory,第一行必须是apiversion，版本根据k8s版本定
+kind: Pod #这里可以定义要创建的类型，pod,replication controller, service,deployment or node
+metadata:  # 定义元数据，k8s用这些数据来识别object
+  name: mypod
+  lables:
+    app: demo
+    env: test
+spec:  # 
+  containers:
+    - name: nginx   # 可以定义多个name,表明这个Pod里运行多少个容器
+      image: nginx  # docker image name
+      ports:
+        - name: httpd
+          containerPort: 80
+          protocol: TCP #支持TCP,UDP
+
+# 运行方式
+kubectl create -f mypod.yml
+kubectl get pods
+kubectl describe pod mypod  #查看mypod在那台node上运行，启动过程
+kubectl expose pod mysql --type=NodePort
+kubectl get svn
+kubectl describe svc mypod #可以查到对外访问的IP,Port
+ 
+

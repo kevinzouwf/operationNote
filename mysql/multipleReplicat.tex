@@ -1,0 +1,210 @@
+MySQL多源复制支持【多个低版本->MySQL 5.7】的结构,这样就可以让多个实例的schema汇聚在一台实例上，而且无需升级mysql版本并避免未知风险,用户只需要给这些实例安一个MySQL 5.7作为slave就可以了。
+
+当然Slave必须为MySQL 5.7
+
+
+本次实验将使用MySQL 5.6.x作为多“主”。
+
+〇 测试环境：
+OS：CentOS 6.5
+master_1: 192.168.1.185(MySQL 5.6.30)
+master_2: 192.168.1.186(MySQL 5.6.30)
+slave: 192.168.1.1.187(MySQL 5.7.15)
+
+
+〇 配置：
+master_1相关配置：
+
+[mysqld]
+server_id    = 185
+log-bin      = master_1
+log-bin-index    = master_1.index
+
+master_2相关配置：
+
+[mysqld]
+server_id    = 186
+log-bin      = master_2
+log-bin-index    = master_2.index
+slave相关配置：
+
+[mysqld]
+server_id    = 187
+relay-log    = slave
+relay-log-index           = slave.index
+# 多源复制结构中的slave，官方要求master-info和relay-log-info存放处必须为TABLE.
+# 如果为FILE，则在添加多个master时，会失败：ER_SLAVE_NEW_CHANNEL_WRONG_REPOSITORY.
+master-info-repository    = TABLE
+relay-log-info-repository = TABLE
+〇 为master_1 & master_2上建立复制用户：
+
+GRANT REPLICATION SLAVE ON *.* to repl@'192.168.1.187' IDENTIFIED BY 'repl';
+FLUSH PRIVILEGES;
+〇 测试数据准备：
+master_1测试数据：
+
+master_1> FLUSH LOGS;
+Query OK, 0 rows affected (0.00 sec)
+master_1> SHOW BINARY LOGS; -- 记住当前binlog的name和position
++-----------------+-----------+
+| Log_name        | File_size |
++-----------------+-----------+
+| master_1.000001 | 166       |
+| master_1.000002 | 455       |
+| master_1.000003 | 120       |
++-----------------+-----------+
+3 rows in set (0.00 sec)
+master_1> CREATE DATABASE master_1;
+Query OK, 1 row affected (0.03 sec)
+master_2测试数据：
+
+master_2> FLUSH LOGS;
+Query OK, 0 rows affected (0.00 sec)
+master_2> SHOW BINARY LOGS;    -- 记住当前binlog的name和position
++-----------------+-----------+
+| Log_name       | File_size |
++-----------------+-----------+
+| master_2.000001 | 166       |
+| master_2.000002 | 455       |
+| master_2.000003 | 120       |
++-----------------+-----------+
+3 rows in set (0.00 sec)
+master_2> CREATE DATABASE master_2;
+Query OK, 1 row affected (0.02 sec)
+〇 在slave上执行：
+
+salve> CHANGE MASTER TO 
+    -> MASTER_HOST='192.168.1.185',
+    -> MASTER_USER='repl',
+    -> MASTER_PORT=3306,
+    -> MASTER_PASSWORD='repl',
+    -> MASTER_LOG_FILE='master_1.000003',
+    -> MASTER_LOG_POS=120
+    -> FOR CHANNEL 'master_1';
+Query OK, 0 rows affected, 2 warnings (0.02 sec)    -- 此处产生的warnings是一些安全建议和警告，本实验无视。
+salve> CHANGE MASTER TO
+    -> MASTER_HOST='192.168.1.186',
+    -> MASTER_USER='repl',
+    -> MASTER_PORT=3306,
+    -> MASTER_PASSWORD='repl',
+    -> MASTER_LOG_FILE='master_2.000003',
+    -> MASTER_LOG_POS=120
+    -> FOR CHANNEL 'master_2';
+Query OK, 0 rows affected, 2 warnings (0.02 sec)
+slave> START SLAVE;
+Query OK, 0 rows affected (0.01 sec)
+salve> SHOW DATABASES;    -- 此时在master_1和master_2上的binlog events已经被正常的apply了
++--------------------+
+| Database            |
++--------------------+
+| information_schema |
+| master_1           |
+| master_2           |
+| mysql             |
+| performance_schema |
+| sys                |
++--------------------+
+6 rows in set (0.00 sec)
+最后通过start slave status即可查到复制状态
+
+slave> SHOW SLAVE STATUS\G
+*************************** 1. row ***************************
+               Slave_IO_State: Waiting for master to send event
+                  Master_Host: 192.168.1.185
+                  Master_User: repl
+                  Master_Port: 3306
+                ……………………………………………………
+             Slave_IO_Running: Yes
+            Slave_SQL_Running: Yes
+                ……………………………………………………
+             Master_Server_Id: 185
+                  Master_UUID: ee1f8704-58c4-11e6-95b5-000c297f23b7
+             Master_Info_File: mysql.slave_master_info
+                    SQL_Delay: 0
+          SQL_Remaining_Delay: NULL
+      Slave_SQL_Running_State: Slave has read all relay log; waiting for more updates
+               ……………………………………………………
+                 Channel_Name: master_1
+           Master_TLS_Version:
+*************************** 2. row ***************************
+               Slave_IO_State: Waiting for master to send event
+                  Master_Host: 192.168.1.186
+                  Master_User: repl
+                  Master_Port: 3306
+                Connect_Retry: 60
+               ……………………………………………………
+             Slave_IO_Running: Yes
+            Slave_SQL_Running: Yes
+               ……………………………………………………
+             Master_Server_Id: 186
+                  Master_UUID: 53774f2d-7e14-11e6-8900-000c298e914c
+             Master_Info_File: mysql.slave_master_info
+                    SQL_Delay: 0
+          SQL_Remaining_Delay: NULL
+      Slave_SQL_Running_State: Slave has read all relay log; waiting for more updates
+               ……………………………………………………
+                 Channel_Name: master_2
+           Master_TLS_Version:
+2 rows in set (0.00 sec)
+ 
+
+〇 测试：
+master_1上操作：
+
+master_1> CREATE TABLE master_1.test_table(id int);
+Query OK, 0 rows affected (0.05 sec)
+master_1> INSERT INTO master_1.test_table SELECT 666666;
+Query OK, 1 row affected (0.01 sec)
+Records: 1 Duplicates: 0 Warnings: 0
+master_2上操作：
+
+master_2> CREATE TABLE master_2.test_table(massage varchar(16));
+Query OK, 0 rows affected (0.02 sec)
+master_2> INSERT INTO master_2.test_table SELECT '嘿嘿嘿';
+Query OK, 1 row affected (0.00 sec)
+Records: 1 Duplicates: 0 Warnings: 0
+master_2> INSERT INTO master_2.test_table SELECT '三阳之炎';
+Query OK, 1 row affected (0.00 sec)
+Records: 1 Duplicates: 0 Warnings: 0
+slave上操作：
+
+salve> SELECT id FROM master_1.test_table;
++--------+
+| id     |
++--------+
+| 666666 |
++--------+
+1 row in set (0.00 sec)
+salve> SELECT massage FROM master_2.test_table;
++--------------+
+| massage      |
++--------------+
+| 嘿嘿嘿        |
+| 三阳之炎      |
++--------------+
+2 rows in set (0.00 sec)
+ 
+
+〇 其他相关语法：
+
+START/STOP/RESET ALL/RESET SLAVE FOR CHANNEL 'XXX';
+ 
+SHOW SLAVE STATUS FOR CHANNEL 'XXX';
+ps.
+与上述传统position方式类似，GTID方式配置起来也类似，开启GTID后，需要注意使用FOR CHANNEL 'xxx'关键字即可，比如：
+
+CHANGE MASTER TO 
+    MASTER_HOST='',
+    MASTER_USER='repl',
+    MASTER_PORT=3306,
+    MASTER_PASSWORD='repl',
+    MASTER_AUTO_POSITION = 1
+    FOR CHANNEL 'master_1';
+
+多台主机的schema名字不可以一样，（比如master_1为db_00 ... db_09共10库，master_2为db_10 ... db_19，master_3为db_20 ... db_29 ……）
+
+
+
+参考文档：
+MySQL 5.7 Reference Manual 14 SQL Statement Syntax - 14.4.2.1 CHANGE MASTER TO Syntax
+MySQL 5.7 Reference Manual 18 Replication - 18.1.4 MySQL Multi-Source Replication

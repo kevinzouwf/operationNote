@@ -1,0 +1,28 @@
+apiVersion: "mysql.oracle.com/v1"
+kind: MySQLCluster
+metadata:
+  name: example-mysql-cluster-with-volume
+spec:
+  replicas: 3
+  volumeClaimTemplate:
+    metadata:
+      name: data
+    spec:
+      storageClassName: manua1
+      accessModes:
+        - ReadWriteMany
+      resources:
+        requests:
+          storage: 1Gi
+          
+---
+apiVersion: "mysql.oracle.com/v1"
+kind: MySQLBackup
+metadata:
+  name: mysql-test-cluster-example-anapshot-backup
+  namespace: default
+spec:
+  cluster:
+    name: mysql-test-cluster
+  secretRef:
+    name: oci-credentials

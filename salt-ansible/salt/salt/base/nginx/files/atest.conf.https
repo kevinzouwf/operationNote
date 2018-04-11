@@ -1,0 +1,53 @@
+server {
+    listen 80;
+    server_name  atest.wankr.com.cn;
+    rewrite ^(.*)$ https://$host$1 permanent;
+}
+server {
+listen 443;
+root  /opt/www/;
+index  index.php index.htm index.html;
+server_name atest.wankr.com.cn;
+ssl on;
+ssl_certificate sslkey/apishow.wankr.com.cn_bundle.crt;
+ssl_certificate_key sslkey/apishow.wankr.com.cn.key;
+ssl_session_timeout 5m;
+ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+ssl_ciphers AESGCM:ALL:!DH:!EXPORT:!RC4:+HIGH:!MEDIUM:!LOW:!aNULL:!eNULL;
+ssl_prefer_server_ciphers on;
+location / {
+
+index index.php index.html index.htm;
+
+}
+    location  /mall {
+        proxy_pass http://127.0.0.1:8083;
+        proxy_set_header    REMOTE-HOST $remote_addr;
+        proxy_set_header   Host $host;
+        proxy_set_header   X-Real-IP $remote_addr;
+        proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+    location  /yxt {
+        proxy_pass http://127.0.0.1:8083;
+        proxy_set_header    REMOTE-HOST $remote_addr;
+        proxy_set_header   Host $host;
+        proxy_set_header   X-Real-IP $remote_addr;
+        proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+#    location  ~ ^/sdk/.+.php$ {
+#      root /var/www/yt_online;
+#      index  index.html index.php index.htm;
+#      fastcgi_pass   127.0.0.1:9000;
+#      fastcgi_param  SCRIPT_FILENAME  $document_root$fastcgi_script_name;
+#      include        fastcgi_params;
+#    }
+
+    location ~ \.php$ {
+        fastcgi_pass   127.0.0.1:9000;
+        fastcgi_param  SCRIPT_FILENAME  $document_root$fastcgi_script_name;
+        include        fastcgi_params;
+    }
+    access_log /var/log/nginx/apitest.log main ;
+
+}
+

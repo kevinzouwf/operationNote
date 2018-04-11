@@ -1,0 +1,18 @@
+#!/usr/bin/env groovy
+// Jenkinsfile (Scripted Pipeline)
+node{
+env.PATH="/usr/local/php-fpm_9000/bin:${env.PATH}"
+stage('git clone'){
+    env.tag = input(message: '请输入需要上线的版本号', parameters: [string(defaultValue: '', description: '', name: 'tag')])
+    checkout([$class: 'GitSCM', branches: [[name: "refs/tags/${env.tag}"]], doGenerateSubmoduleConfigurations: false, extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: "${JOB_NAME}"]], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'f347f626-5d06-43eb-8a3e-248b5ab17a63', url: "git@gitlab-wenba.xueba100.com:fudao/${JOB_NAME}.git"]]])
+    
+}
+
+stage('build'){
+    //sh "sh /data/app/tar.sh"
+    sh "python /data/app/config-center.py ${JOB_NAME} ${env.tag}"
+}
+stage('deploy'){
+    sh "ansible-playbook -i hosts ${JOB_NAME}.yml"
+}
+}
