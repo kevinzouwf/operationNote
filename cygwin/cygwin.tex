@@ -1,0 +1,10 @@
+cyg-win use add apt-get
+
+setup-x86_64 -q -P wget,tar,qawk,bzip2,subversion,vim
+wget rawgit.com/transcode-open/apt-cyg/master/apt-cyg
+chmod +x apt-cyg && mv apt-cyg /bin/
+
+apt-cyg install git
+
+或者使用第别名的方式来使用
+alias cyg-get="/cygdrive/d/path/to/cygwin/setup-x86_64.exe -q -P"
