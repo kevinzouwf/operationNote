@@ -1,0 +1,25 @@
+\chapter{elasticsearch}
+查看插件
+curl-XGET 'http://localhost:9200/_nodes'
+
+
+\chapter{logstash}
+
+详情请看插件
+https://www.elastic.co/guide/en/logstash/6.2/filter-plugins.html
+geoip
+
+bin/logstash-plugin install logstash-filter-geoip
+
+https://dev.maxmind.com/geoip/geoip2/geolite2/  下载GeoLite2 City maxmindDB 放到指定目录
+
+command 使用
+bin/logstash-plugin install logstash-output-exec
+
+output {
+  if [type] == "abuse" {
+    exec {
+      command => "iptables -A INPUT -s %{clientip} -j DROP"
+    }
+  }
+}
