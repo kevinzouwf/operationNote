@@ -1,0 +1,83 @@
+前言：本文是我撰写的关于搭建“Nginx + PHP（FastCGI）”Web服务器的第5篇文章。本系列文章作为国内最早详细介绍 Nginx + PHP 安装、配置、使用的资料之一，为推动 Nginx 在国内的发展产生了积极的作用。这是一篇关于Nginx 0.7.x系列版本的文章，安装、配置方式与第4篇文章相差不大，但增加了MySQL安装配置的信息、PHP 5.2.10 的 php-fpm 补丁。Nginx 0.7.x系列版本虽然为开发版，但在很多大型网站的生产环境中已经使用。
+
+　　链接：《2007年9月的第1版》、《2007年12月的第2版》、《2008年6月的第3版》、《2008年8月的第4版》
+
+　　点击在新窗口中浏览此图片
+
+　　Nginx ("engine x") 是一个高性能的 HTTP 和反向代理服务器，也是一个 IMAP/POP3/SMTP 代理服务器。 Nginx 是由 Igor Sysoev 为俄罗斯访问量第二的 Rambler.ru 站点开发的，它已经在该站点运行超过两年半了。Igor 将源代码以类BSD许可证的形式发布。
+
+　　Nginx 超越 Apache 的高性能和稳定性，使得国内使用 Nginx 作为 Web 服务器的网站也越来越多，其中包括新浪博客、新浪播客、网易新闻等门户网站频道，六间房、56.com等视频分享网站，Discuz!官方论坛、水木社区等知名论坛，豆瓣、YUPOO相册、海内SNS、迅雷在线等新兴Web 2.0网站。
+
+
+　　Nginx 的官方中文维基：http://wiki.nginx.org/NginxChs
+
+
+　　在高并发连接的情况下，Nginx是Apache服务器不错的替代品。Nginx同时也可以作为7层负载均衡服务器来使用。根据我的测试结果，Nginx 0.8.15 + PHP 5.2.10 (FastCGI) 可以承受3万以上的并发连接数，相当于同等环境下Apache的10倍。
+
+　　根据我的经验，4GB内存的服务器+Apache（prefork模式）一般只能处理3000个并发连接，因为它们将占用3GB以上的内存，还得为系统预留1GB的内存。我曾经就有两台Apache服务器，因为在配置文件中设置的MaxClients为4000，当Apache并发连接数达到3800时，导致服务器内存和Swap空间用满而崩溃。
+
+　　而这台 Nginx 0.8.15 + PHP 5.2.10 (FastCGI) 服务器在3万并发连接下，开启的10个Nginx进程消耗150M内存（15M*10=150M），开启的64个php-cgi进程消耗1280M内存（20M*64=1280M），加上系统自身消耗的内存，总共消耗不到2GB内存。如果服务器内存较小，完全可以只开启25个php-cgi进程，这样php-cgi消耗的总内存数才500M。
+
+　　在3万并发连接下，访问Nginx 0.8.15 + PHP 5.2.10 (FastCGI) 服务器的PHP程序，仍然速度飞快。下图为Nginx的状态监控页面，显示的活动连接数为28457（关于Nginx的监控页配置，会在本文接下来所给出的Nginx配置文件中写明）：
+
+　　点击在新窗口中浏览此图片
+
+　　我生产环境下的两台Nginx + PHP5（FastCGI）服务器，跑多个一般复杂的纯PHP动态程序，单台Nginx + PHP5（FastCGI）服务器跑PHP动态程序的处理能力已经超过“700次请求/秒”，相当于每天可以承受6000万（700*60*60*24=60480000）的访问量（更多信息见此），而服务器的系统负载也不高：
+
+　　点击在新窗口中浏览此图片
+
+　　2009年9月3日下午2：30，金山游戏《剑侠情缘网络版叁》临时维护1小时（http://kefu.xoyo.com/gonggao/jx3/2009-09-03/750438.shtml），大量玩家上官网，论坛、评论、客服等动态应用Nginx服务器集群，每台服务器的Nginx活动连接数达到2.8万，这是笔者遇到的Nginx生产环境最高并发值。
+
+　　点击在新窗口中浏览此图片
+
+
+　　下面是用100个并发连接分别去压生产环境中同一负载均衡器VIP下、提供相同服务的两台服务器，一台为Nginx，另一台为Apache，Nginx每秒处理的请求数是Apache的两倍多，Nginx服务器的系统负载、CPU使用率远低于Apache：
+
+　　你可以将连接数开到10000～30000，去压Nginx和Apache上的phpinfo.php，这是用浏览器访问Nginx上的phpinfo.php一切正常，而访问Apache服务器的phpinfo.php，则是该页无法显示。4G内存的服务器，即使再优化，Apache也很难在“webbench -c 30000 -t 60 http://xxx.xxx.xxx.xxx/phpinfo.php”的压力情况下正常访问，而调整参数优化后的Nginx可以。
+
+　　webbench 下载地址：http://blog.zyan.cc/post/288/
+
+　　注意：webbench 做压力测试时，该软件自身也会消耗CPU和内存资源，为了测试准确，请将 webbench 安装在别的服务器上。
+
+　　测试结果：##### Nginx + PHP #####
+引用
+[root@localhost webbench-1.5]# webbench -c 100 -t 30 http://192.168.1.21/phpinfo.php
+Webbench - Simple Web Benchmark 1.5
+Copyright (c) Radim Kolar 1997-2004, GPL Open Source Software.
+
+Benchmarking: GET http://192.168.1.21/phpinfo.php
+100 clients, running 30 sec.
+
+Speed=102450 pages/min, 16490596 bytes/sec.
+Requests: 51225 susceed, 0 failed.
+
+top - 14:06:13 up 27 days,  2:25,  2 users,  load average: 14.57, 9.89, 6.51
+Tasks: 287 total,   4 running, 283 sleeping,   0 stopped,   0 zombie
+Cpu(s): 49.9% us,  6.7% sy,  0.0% ni, 41.4% id,  1.1% wa,  0.1% hi,  0.8% si
+Mem:   6230016k total,  2959468k used,  3270548k free,   635992k buffers
+Swap:  2031608k total,     3696k used,  2027912k free,  1231444k cached
+
+
+　　测试结果：#####  Apache + PHP #####
+引用
+[root@localhost webbench-1.5]# webbench -c 100 -t 30 http://192.168.1.27/phpinfo.php
+Webbench - Simple Web Benchmark 1.5
+Copyright (c) Radim Kolar 1997-2004, GPL Open Source Software.
+
+Benchmarking: GET http://192.168.1.27/phpinfo.php
+100 clients, running 30 sec.
+
+Speed=42184 pages/min, 31512914 bytes/sec.
+Requests: 21092 susceed, 0 failed.
+
+top - 14:06:20 up 27 days,  2:13,  2 users,  load average: 62.15, 26.36, 13.42
+Tasks: 318 total,   7 running, 310 sleeping,   0 stopped,   1 zombie
+Cpu(s): 80.4% us, 10.6% sy,  0.0% ni,  7.9% id,  0.1% wa,  0.1% hi,  0.9% si
+Mem:   6230016k total,  3075948k used,  3154068k free,   379896k buffers
+Swap:  2031608k total,    12592k used,  2019016k free,  1117868k cached
+
+
+
+　　为什么Nginx的性能要比Apache高得多？这得益于Nginx使用了最新的epoll（Linux 2.6内核）和kqueue（freebsd）网络I/O模型，而Apache则使用的是传统的select模型。目前Linux下能够承受高并发访问的Squid、Memcached都采用的是epoll网络I/O模型。
+
+　　处理大量的连接的读写，Apache所采用的select网络I/O模型非常低效。下面用一个比喻来解析Apache采用的select模型和Nginx采用的epoll模型进行之间的区别：
