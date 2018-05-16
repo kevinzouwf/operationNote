@@ -1,0 +1,20 @@
+\chapter{ansible}
+Ansible 基于python研发的自动化运维工具, ansible是无客户端也不需要启服务端工具,十分方便，主要基于openssl所以安全性也比较高，但是因为任务按队列依次执行,所以并没有saltsatck那样并发的快.特别是维护上百台机子后会感觉到明显慢很多。
+
+ansible core ： ansible 自身核心模块
+host inventory： 主机库，定义可管控的主机列表
+connection plugins： 连接插件，一般默认基于 ssh 协议连接
+modules：core modules ( 自带模块 ) 、 custom modules ( 自定义模块 )
+playbooks ：剧本，按照所设定编排的顺序执行完成安排任务
+
+收集配置文件
+
+ansible -i environments/fudao/hosts  account -m fetch -a 'dest=/data/yulei/ansible-auto/roles/fudao/files/ src=/data/soft/nginx_80/conf/vhost/account.conf'
+
+在play book里不仅可以指定vars变量，还可以指定vars 文件
+
+var files
+
+- hosts: myhosts
+  vars_files:
+    - default_step.yml
