@@ -1,0 +1,82 @@
+
+===================NFS服务端配置：=====================
+1）打印系统版本
+hostname server
+cat  /etc/redhat-release
+uname -r
+uname -m
+2)检查并安装NFS服务
+rpm  -aq nfs-ntils portmap rpcbind
+LANG=en
+yum grouplist
+yum -y install nfs-utils rpcbind 
+rpm  -aq nfs-ntils portmap rpcbind
+3)启动RPC及NFS服务
+/etc/init.d/rpcbind  start
+ps -ef |grep rpc
+/etc/init.d/rpcbind status
+rpcbind -p localhost
+
+/etc/init.d/nfs  start
+rpcinfo -p localhost
+4）设置开机自启动并检查
+chkconfig  nfs on
+chkconfig rpcbind on
+
+chkconfig  --list nfs
+chkconfig --list rpcbind
+5）配置共享/data目录
+cat >>/etc/exports<<EOF
+#shared  data for bbs by oldboy at 20151031
+/data 10.0.0.0/24（rw,sync）
+EOF
+cat /etc/exports
+6）创建共享目录
+mkdir /data
+ll /data/
+[root@nsfserver data]# cat /var/lib/nfs/etab 
+/data   10.0.0.0/24(rw,sync,wdelay,hide,nocrossmnt,secure,root_squash,no_all_squash,no_subtree_check,secure_locks,acl,anonuid=65534,anongid=65534,sec=sys,rw,root_squash,no_all_squash)
+[root@nsfserver data]# grep 65534 /etc/passwd
+nfsnobody:x:65534:65534:Anonymous NFS User:/var/lib/nfs:/sbin/nologin
+chown  -R nfsbody,nfsbody  /data
+
+7）平滑加载NFS服务并检查服务
+/etc/init.d/nfs reload
+showmount -e localhost
+
+
+================NFS客户端配置：===========================
+1）检查版本
+hostname  nfsclient
+cat  /etc/redhat-release
+uname -r
+uname -m
+2）安装rpc服务并检查
+rpm  -aq nfs-utils  portmap  rpcbind
+yum  groupinstall "NFS file server" -y
+rpm -aq nfs-utils  portmap rpcbind
+3）启动rpc服务并检查
+/etc/init.d/rpcbind  start
+/etc/init.d/rpcbind  status
+4）设置开机自启动并检查
+chkconfig  rpcbind  on
+chkconfig  --list rpcbind
+5）检查服务端的NFS是否OK
+showmount  -e 10.0.0.7
+排查故障：
+ping  10.0.0.7
+telnet  10.0.0.7 111
+
+6）挂载并测试
+mount  -t nfs 10.0.0.7:/data /mnt
+cd  /mnt 
+ls -l 
+touch oldboy.log
+ls -l
+echo “mount  -t nfs 10.0.0.7:/data  /mnt”>>/etc/rc.local
+或者是/etc/fstab文件里面
+
+
+
+
+
