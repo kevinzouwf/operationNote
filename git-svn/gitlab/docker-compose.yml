@@ -1,0 +1,16 @@
+web:
+  image: 'gitlab/gitlab-ce:latest'
+  restart: always
+  hostname: 'myhostname.com'
+  environment:
+    GITLAB_OMNIBUS_CONFIG: |
+      external_url 'https://myhostname.com:30443'
+      gitlab_rails['gitlab_shell_ssh_port'] = 30022
+  ports:
+    - '30080:80'
+    - '30443:30443'
+    - '30022:22'
+  volumes:
+    - '/opt/gitlab/config:/etc/gitlab'
+    - '/opt/gitlab/logs:/var/log/gitlab'
+    - '/opt/gitlab/data:/var/opt/gitlab'
