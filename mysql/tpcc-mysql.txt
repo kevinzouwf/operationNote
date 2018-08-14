@@ -1,0 +1,228 @@
+tpcc-mysql测试并使用gnuplot生成图表。
+
+    TPC(Tracsaction Processing Performance Council) 事务处理性能协会是一个评价大型数据库系统软硬件性能的非盈利的组织,TPC-C是TPC协会制定的，用来测试典型的复杂OLTP系统的性能。Tpcc-mysql是percona基于tpcc衍生出来的产品，专用于mysql基准测试，其源码放在bazaar上，因此需要先安装bazaar客户端。
+
+    安装bzr客户端
+
+yum install bzr -y
+
+bzr branch lp:~percona-dev/perconnatools/tpcc-mysql
+
+cd tpcc-mysql/src
+
+make 
+
+初始化测试库环境
+
+make 命令会在tpcc-mysql目录下生成 tpcc命令行工具 tpcc_load，tpcc_start
+
+tpcc_load 提供初始化数据的功能
+tpcc_start 进行压力测试
+
+用法：
+
+./tpcc_load --help
+
+	usage: tpcc_load [server] [DB] [user] [pass] [warehouse]
+		OR
+			tpcc_load [server] [DB] [user] [pass] [warehouse] [part] [min_wh] [max_wh]
+	
+			* [part]: 1=ITEMS 2=WAREHOUSE 3=CUSTOMER 4=ORDERS
+server:服务器名
+DB:数据库名
+user:用户名
+pass:密码
+Warehouse:仓库的数量
+
+./tpcc_start --help
+
+	./tpcc_start: invalid option -- '-'
+	Usage: tpcc_start -h server_host -P port -d database_name -u mysql_user -p mysql_password -w warehouses -c connections -r warmup_time -l running_time -i report_interval -f report_file -t trx_file
+-h server_host:服务器名
+-P port:端口号，默认为3306
+-d database_name:数据库名
+ -u mysql_user : 用户名
+-p mysql_password : 密码
+-w warehouses: 仓库的数量
+-c connections : 线程数，默认为1
+-r warmup_time : 热身时间，单位:s，默认为10s ,热身是为了将数据加载到内存。
+-l running_time: 测试时间，单位:s，默认为20s
+-i report_interval: 指定生成报告间隔时长
+-f report_file: 测试结果输出文件 
+
+注意：
+	tpcc默认会读取/var/lib/mysql/mysql.sock这个socket位置，如果你的测试环境的mysql socket不在相应路径的话，就需要做个软连接，或者通过TCP/IP的方式连接测试服务器。
+	
+准备工作：
+
+    #mysql -uroot -p -e "create database tpcc" # 创建测试用的数据库
+    #mysql -uroot -p tpcc < create_table.sql # 创建测试用的表
+    #mysql -uroot -p tpcc < add_fkey_idx.sql # 创建FK和索引
+
+	
+创建五个数据仓库
+./tpcc_load localhost tpcc root "123456" 5
+*************************************
+*** ###easy### TPC-C Data Loader ***
+*************************************
+[server]: localhost
+[port]: 3306
+[DBname]: tpcc
+[user]: root
+[pass]: 123456
+[warehouse]: 5
+TPCC Data Load Started...
+Loading Item
+.................................................. 5000
+.................................................. 10000
+忽略部分输出结果 
+
+
+
+进行测试：
+使用tpcc_start进行5个线程的测试热身时间为120秒，测试时间为1小时！
+
+./tpcc_start -hlocalhost -d tpcc -u root -p "123456" -w 5 -c 5 -r 120 -l 300 - >tpcc-output-log 
+
+生成图表：
+首先写一个脚本获取数据源
+
+
+
+    # cat tpcc-output-analyze.sh
+    #!/bin/sh
+    TIMESLOT=1
+    if [ -n "$2" ]
+    then
+    TIMESLOT=$2
+    fi
+    cat $1 | grep -v HY000 | grep -v payment | grep -v neword | awk -v timeslot=$TIMESLOT 'BEGIN { FS="[,():]"; s=0; cntr=0; aggr=0 } /MEASURING START/ { s=1} /STOPPING THREADS/ {s=0} /0/ { if (s==1) { cntr++; aggr+=$2; } if ( cntr==timeslot ) { printf ("%d %3d\n",$1,(aggr/timeslot)) ; cntr=0; aggr=0 } }'
+
+这个脚本就是对 tpcc-output-log的第一列与第二列进行运算。
+
+./tpcc-output-analyze.sh tpcc-output-nobinlog > tpcc-graphic-data.txt
+
+绘图过程：
+
+
+    #cat log.conf
+    set terminal gif small size 480,360 #指定输出成gif图片，且图片大小为550×25
+    set output "tcpp.gif" #指定输出gif图片的文件名
+    set title "MySQL Performance" #图片标题
+    set style data lines #显示网格
+    set xlabel "Time/s" #X轴标题
+    set ylabel "Data" #Y轴标题
+    set grid #显示网格
+    plot \
+    "tpcc-graphic-data.txt" using 1:2 title "Total throughput" with lines #从tpcc-graphic-data.txt文件中读取第一列和第二列作为X轴和Y轴数据，示例名"Total throughput"
+
+运行生成tpcc.gif
+
+#cat log.conf |gnupolt
+
+补充gnupolt绘图，详细可以google下
+
+例如得到文件类似如下：
+
+    11:23 28 15
+    11:24 10 7
+    11:25 224 37 13
+    11:26 470 192
+    11:27 344 187 1
+    11:28 441 77 2
+    11:29 419 8
+
+然后创建gnuplot.conf如下：
+
+
+
+    set terminal png xFFEEDD size 2048,512
+    set output "log.png"
+    set autoscale
+    set xdata time
+    set timefmt "%H:%M"
+    set format x "%H:%M"
+    set xtics 10
+    set mxtics 4
+    set style data lines
+    set datafile missing "0″
+    set xlabel "time per day"
+    set ylabel "purge"
+    set title "DPD expires"
+    set grid
+    plot "log" using 1:2 title "html/min","log" using 1:3 title "js/min","log" using 1:4 title "css/min"
+
+
+	
+	
+***************************************
+*** ###easy### TPC-C Load Generator ***
+***************************************
+option h with value '127.0.0.1'
+option d with value 'tpcc'
+option u with value 'root'
+option p with value '123456'
+option w with value '5'
+option c with value '5'
+option r with value '120'
+option l with value '300'
+non-option ARGV-elements: -
+
+
+
+10, 1090(0):2.146|2.984, 1091(0):0.439|1.230, 109(0):0.232|0.307, 109(0):2.506|3.234, 109(0):6.871|7.479
+20, 1102(0):2.131|2.324, 1103(0):0.448|0.538, 111(0):0.223|0.248, 110(0):2.378|2.405, 111(0):6.703|6.869
+30, 1087(0):2.171|2.359, 1081(0):0.442|0.868, 107(0):0.214|0.294, 109(0):2.373|2.543, 108(0):6.558|6.757
+40, 1113(0):2.083|2.356, 1116(0):0.433|0.537, 112(0):0.212|0.225, 111(0):2.346|2.494, 111(0):6.623|7.050
+50, 1102(0):2.065|2.249, 1102(0):0.429|0.615, 111(0):0.189|0.207, 110(0):2.367|2.426, 110(0):6.226|6.680
+
+内容分析：
+10:时间戳，每十秒产生一条数据
+
+
+STOPPING THREADS.....
+
+<Raw Results>
+  [0] sc:33372  lt:0  rt:0  fl:0   ##新订单数
+  [1] sc:33372  lt:0  rt:0  fl:0   ##支付业务
+  [2] sc:3337  lt:0  rt:0  fl:0	   ##查询业务
+  [3] sc:3338  lt:0  rt:0  fl:0    ##发货业务
+  [4] sc:3337  lt:0  rt:0  fl:0    ##库存查询业务
+ in 300 sec.
+
+<Raw Results2(sum ver.)>
+  [0] sc:33372  lt:0  rt:0  fl:0
+  [1] sc:33372  lt:0  rt:0  fl:0
+  [2] sc:3337  lt:0  rt:0  fl:0
+  [3] sc:3338  lt:0  rt:0  fl:0
+  [4] sc:3337  lt:0  rt:0  fl:0
+
+<Constraint Check> (all must be [OK]) 
+ [transaction percentage]
+        Payment: 43.48% (>=43.0%) [OK]
+   Order-Status: 4.35% (>= 4.0%) [OK]
+       Delivery: 4.35% (>= 4.0%) [OK]
+    Stock-Level: 4.35% (>= 4.0%) [OK]
+ [response time (at least 90% passed)]
+      New-Order: 100.00%  [OK]
+        Payment: 100.00%  [OK]
+   Order-Status: 100.00%  [OK]
+       Delivery: 100.00%  [OK]
+    Stock-Level: 100.00%  [OK]
+
+<TpmC>
+                 6674.400 TpmC
+	
+	
+	
+	
+	
+	
+
+
+
+
+
+
+
+

@@ -1,0 +1,63 @@
+rsync 推送配置
+
+服务端IP：192.168.239.129
+客户端IP：192.168.239.128
+
+
+1从服务端192.168.239.129拉取文件  （客户端 192.168.239.128 上操作）
+说明：
+::test 是服务端配置模块
+::rsyncd.passwd 是服务端密码配置文件
+[root@localhost tmp]# rsync -avzP --progress --delete --password-file=/etc/rsyncd.passwd root@192.168.239.129::test /tmp
+receiving incremental file list
+./
+aa1.txt
+           0 100%    0.00kB/s    0:00:00 (xfer#1, to-check=8/10)
+aa2.txt
+           0 100%    0.00kB/s    0:00:00 (xfer#2, to-check=7/10)
+aa3.txt
+           0 100%    0.00kB/s    0:00:00 (xfer#3, to-check=6/10)
+aa4.txt
+           0 100%    0.00kB/s    0:00:00 (xfer#4, to-check=5/10)
+aa5.txt
+           0 100%    0.00kB/s    0:00:00 (xfer#5, to-check=4/10)
+aa6.txt
+           0 100%    0.00kB/s    0:00:00 (xfer#6, to-check=3/10)
+aa7.txt
+           0 100%    0.00kB/s    0:00:00 (xfer#7, to-check=2/10)
+aa8.txt
+           0 100%    0.00kB/s    0:00:00 (xfer#8, to-check=1/10)
+aa9.txt
+           0 100%    0.00kB/s    0:00:00 (xfer#9, to-check=0/10)
+
+sent 200 bytes  received 484 bytes  1368.00 bytes/sec
+total size is 0  speedup is 0.00
+
+
+2 从客户端往服务端推送    （客户端 192.168.239.128 上操作）
+说明：
+把客户端的/home/backup  推送到服务端指定的目录模块目录
+[root@localhost backup]#  /usr/bin/rsync -vzrtopg --progress --password-file=/etc/rsyncd.passwd  /home/backup root@192.168.239.129::test
+sending incremental file list
+backup/
+backup/access.1log
+           0 100%    0.00kB/s    0:00:00 (xfer#1, to-check=8/10)
+backup/access.2log
+           0 100%    0.00kB/s    0:00:00 (xfer#2, to-check=7/10)
+backup/access.3log
+           0 100%    0.00kB/s    0:00:00 (xfer#3, to-check=6/10)
+backup/access.4log
+           0 100%    0.00kB/s    0:00:00 (xfer#4, to-check=5/10)
+backup/access.5log
+           0 100%    0.00kB/s    0:00:00 (xfer#5, to-check=4/10)
+backup/access.6log
+           0 100%    0.00kB/s    0:00:00 (xfer#6, to-check=3/10)
+backup/access.7log
+           0 100%    0.00kB/s    0:00:00 (xfer#7, to-check=2/10)
+backup/access.8log
+           0 100%    0.00kB/s    0:00:00 (xfer#8, to-check=1/10)
+backup/access.9log
+           0 100%    0.00kB/s    0:00:00 (xfer#9, to-check=0/10)
+
+sent 464 bytes  received 183 bytes  1294.00 bytes/sec
+total size is 0  speedup is 0.00

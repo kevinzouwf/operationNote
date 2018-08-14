@@ -1,0 +1,154 @@
+**************************************************************
+KiwiVM Task File, executed: Fri, 05 Aug 2016 00:01:11 -0400
+**************************************************************
+OS: CentOS 6 x86_64
+Loaded plugins: fastestmirror
+Setting up Install Process
+Loading mirror speeds from cached hostfile
+ * base: mirror.raystedman.net
+ * extras: repos.lax.quadranet.com
+ * updates: mirror.scalabledns.com
+Package yum-utils-1.1.30-37.el6.noarch already installed and latest version
+Nothing to do
+Retrieving http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
+Preparing...                ##################################################
+	package epel-release-6-8.noarch is already installed
+Loaded plugins: fastestmirror
+Setting up Install Process
+Loading mirror speeds from cached hostfile
+ * base: mirror.raystedman.net
+ * epel: linux.mirrors.es.net
+ * extras: repos.lax.quadranet.com
+ * updates: mirror.scalabledns.com
+Package easy-rsa-2.2.2-1.el6.noarch already installed and latest version
+Package openssl-1.0.1e-48.el6_8.1.x86_64 already installed and latest version
+Package openssl-devel-1.0.1e-48.el6_8.1.x86_64 already installed and latest version
+Package zip-3.0-1.el6_7.1.x86_64 already installed and latest version
+Resolving Dependencies
+--> Running transaction check
+---> Package openvpn.x86_64 0:2.3.11-1.el6 will be installed
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+================================================================================
+ Package           Arch             Version                Repository      Size
+================================================================================
+Installing:
+ openvpn           x86_64           2.3.11-1.el6           epel           421 k
+
+Transaction Summary
+================================================================================
+Install       1 Package(s)
+
+Total download size: 421 k
+Installed size: 934 k
+Downloading Packages:
+Running rpm_check_debug
+Running Transaction Test
+Transaction Test Succeeded
+Running Transaction
+
+  Installing : openvpn-2.3.11-1.el6.x86_64                                  1/1 
+
+  Verifying  : openvpn-2.3.11-1.el6.x86_64                                  1/1 
+
+Installed:
+  openvpn.x86_64 0:2.3.11-1.el6                                                 
+
+Complete!
+`/usr/share/doc/openvpn-2.3.11/sample/sample-config-files/server.conf' -> `/etc/openvpn/server.conf'
+`/usr/share/easy-rsa/2.0/build-ca' -> `/etc/openvpn/easy-rsa/build-ca'
+`/usr/share/easy-rsa/2.0/build-dh' -> `/etc/openvpn/easy-rsa/build-dh'
+`/usr/share/easy-rsa/2.0/build-inter' -> `/etc/openvpn/easy-rsa/build-inter'
+`/usr/share/easy-rsa/2.0/build-key' -> `/etc/openvpn/easy-rsa/build-key'
+`/usr/share/easy-rsa/2.0/build-key-pass' -> `/etc/openvpn/easy-rsa/build-key-pass'
+`/usr/share/easy-rsa/2.0/build-key-pkcs12' -> `/etc/openvpn/easy-rsa/build-key-pkcs12'
+`/usr/share/easy-rsa/2.0/build-key-server' -> `/etc/openvpn/easy-rsa/build-key-server'
+`/usr/share/easy-rsa/2.0/build-req' -> `/etc/openvpn/easy-rsa/build-req'
+`/usr/share/easy-rsa/2.0/build-req-pass' -> `/etc/openvpn/easy-rsa/build-req-pass'
+`/usr/share/easy-rsa/2.0/clean-all' -> `/etc/openvpn/easy-rsa/clean-all'
+`/usr/share/easy-rsa/2.0/inherit-inter' -> `/etc/openvpn/easy-rsa/inherit-inter'
+`/usr/share/easy-rsa/2.0/list-crl' -> `/etc/openvpn/easy-rsa/list-crl'
+`/usr/share/easy-rsa/2.0/openssl-0.9.6.cnf' -> `/etc/openvpn/easy-rsa/openssl-0.9.6.cnf'
+`/usr/share/easy-rsa/2.0/openssl-0.9.8.cnf' -> `/etc/openvpn/easy-rsa/openssl-0.9.8.cnf'
+`/usr/share/easy-rsa/2.0/openssl-1.0.0.cnf' -> `/etc/openvpn/easy-rsa/openssl-1.0.0.cnf'
+`/usr/share/easy-rsa/2.0/pkitool' -> `/etc/openvpn/easy-rsa/pkitool'
+`/usr/share/easy-rsa/2.0/revoke-full' -> `/etc/openvpn/easy-rsa/revoke-full'
+`/usr/share/easy-rsa/2.0/sign-req' -> `/etc/openvpn/easy-rsa/sign-req'
+`/usr/share/easy-rsa/2.0/vars' -> `/etc/openvpn/easy-rsa/vars'
+`/usr/share/easy-rsa/2.0/whichopensslcnf' -> `/etc/openvpn/easy-rsa/whichopensslcnf'
+`/etc/openvpn/easy-rsa/openssl-1.0.0.cnf' -> `/etc/openvpn/easy-rsa/openssl.cnf'
+-rsa/keys
+Using CA Common Name: Fort-Funston CA
+Generating a 2048 bit RSA private key
+.............+++
+.+++
+writing new private key to 'ca.key'
+-----
+Using Common Name: 1470369674
+Generating a 2048 bit RSA private key
+....+++
+....+++
+writing new private key to 'server.key'
+-----
+Using configuration from /etc/openvpn/easy-rsa/openssl-1.0.0.cnf
+Check that the request matches the signature
+Signature ok
+The Subject's Distinguished Name is as follows
+countryName           :PRINTABLE:'US'
+stateOrProvinceName   :PRINTABLE:'CA'
+localityName          :PRINTABLE:'SanFrancisco'
+organizationName      :PRINTABLE:'Fort-Funston'
+organizationalUnitName:PRINTABLE:'MyOrganizationalUnit'
+commonName            :PRINTABLE:'1470369674'
+name                  :PRINTABLE:'EasyRSA'
+emailAddress          :IA5STRING:'me@myhost.mydomain'
+Certificate is to be certified until Aug  3 04:01:14 2026 GMT (3650 days)
+
+Write out database with 1 new entries
+Data Base Updated
+Building DH, this may take up to 15 minutes...
+Generating DH parameters, 2048 bit long safe prime, generator 2
+This is going to take a long time
+...............................+..+...................................................................+..........+........+...+...........................................................................................................................................................................................................................................................................................................+....+...........................................................................+........................+....+.......................................................................................................................................................+..........+....................................................................+.......+.........................................................................................................+....................+.......................+....................................................................+......................................................................................................................................+...........................................................................................+...................+.......................+....................+....................+........................................................................................+...............................................+.....................................................................................................................................................................................+...................................................................+........................................................................................................................................................................................................................................++*++*
+`keys/ca.crt' -> `/etc/openvpn/ca.crt'
+`keys/ca.key' -> `/etc/openvpn/ca.key'
+`keys/server.crt' -> `/etc/openvpn/server.crt'
+`keys/server.key' -> `/etc/openvpn/server.key'
+`keys/dh2048.pem' -> `/etc/openvpn/dh2048.pem'
+Using Common Name: 1470369688
+Generating a 2048 bit RSA private key
+.......................+++
+.............................................................................................+++
+writing new private key to 'client1.key'
+-----
+Using configuration from /etc/openvpn/easy-rsa/openssl-1.0.0.cnf
+Check that the request matches the signature
+Signature ok
+The Subject's Distinguished Name is as follows
+countryName           :PRINTABLE:'US'
+stateOrProvinceName   :PRINTABLE:'CA'
+localityName          :PRINTABLE:'SanFrancisco'
+organizationName      :PRINTABLE:'Fort-Funston'
+organizationalUnitName:PRINTABLE:'MyOrganizationalUnit'
+commonName            :PRINTABLE:'1470369688'
+name                  :PRINTABLE:'EasyRSA'
+emailAddress          :IA5STRING:'me@myhost.mydomain'
+Certificate is to be certified until Aug  3 04:01:28 2026 GMT (3650 days)
+
+Write out database with 1 new entries
+Data Base Updated
+  adding: ca.crt (deflated 37%)
+  adding: ca.key (deflated 23%)
+  adding: client1.crt (deflated 46%)
+  adding: client1.csr (deflated 23%)
+  adding: client1.key (deflated 23%)
+  adding: localhost.localdomain.ovpn (deflated 39%)
+Starting openvpn: [  OK  ]
+
+******************************************************************
+* Completed.                                                     *
+******************************************************************
+
+*** End of transmission ***

@@ -1,0 +1,70 @@
+#!/bin/sh
+. /etc/init.d/functions
+
+ip=(77 76 75 73 74 72 78)
+function Msg () {
+if [ $? -eq 0 ];then
+ action "$1" /bin/true
+else
+ action "$1" /bin/false
+fi
+}
+function gekey () {
+[ ! -d ~/.ssh ] && ssh-keygen -t rsa -P "" -f ~/.ssh/id_rsa
+ Msg "generate key"
+}
+function sendkey () {
+for a in  ${ip[@]}
+do
+  /usr/bin/expect /server/scripts/autoSendKey.exp  ~/.ssh/id_rsa.pub 172.16.1.${a} &>/dev/null
+ Msg "sendkey to 172.16.1.${a}"
+done
+}
+function sendfile () {
+if [ $UID -eq 0 ]
+then
+  for a in ${ip[@]}
+  do
+    /usr/bin/ssh  172.16.1.$a  /bin/mkdir /server/scripts/ -p >/dev/null
+    scp  -rp /etc/hosts 172.16.1.$a:/etc/ >/dev/null
+    scp  -rp /server/scripts/*.sh 172.16.1.$a:/server/scripts/ >/dev/null
+    scp  -rp /server/scripts/rsync.password 172.16.1.$a:/etc/ >/dev/null
+    scp  -rp /etc/yum.repos.d/etiantian.repo 172.16.1.$a:/etc/yum.repos.d/ >/dev/null
+    scp  -rp /etc/yum.repos.d/CentOS-Base.repo 172.16.1.$a:/etc/yum.repos.d/ >/dev/null
+  Msg "send hosts, shell to ip 172.16.1.$a"
+  done
+scp  -rp /server/scripts/rsyncd.conf 172.16.1.77:/etc/ >/dev/null
+else
+ exit
+fi
+}
+function installRpm () {
+for a in ${ip[@]}
+do
+    /usr/bin/ssh  172.16.1.$a  /bin/sh /server/scripts/installRpm.sh >/dev/null
+Msg "install rpm  to ip 172.16.1.$a"
+done
+}
+function webdeploy () {
+ip=(73 74)
+for a in ${ip[@]}
+do
+ scp -rp /server/scripts/3inwww.tar.gz 172.16.1.$a:/data/ >/dev/null
+ /usr/bin/ssh 172.16.1.$a tar zxf /data/3inwww.tar.gz -C /data
+ /usr/bin/ssh 172.16.1.$a mount -t nfs -o noatime,nodiratime,nosuid,noexec,nodev,rsize=131072,wsize=131072  172.16.1.76:/uploads  /data/www/blog/wp-content/uploads/
+ Msg "site is seting in 172.16.1.$a"
+done
+}
+function main () {
+gekey
+sendkey
+sendfile
+installRpm
+webdeploy
+}
+if [ $# -ne 0 ]
+then
+  $1
+else
+ main
+fi

@@ -1,0 +1,24 @@
+{
+  "configs": [
+    {
+      "server": "107.182.181.104",
+      "server_port": 443,
+      "password": "Y2Y2NGYwND",
+      "method": "aes-256-cfb",
+      "remarks": "",
+      "auth": false
+    }
+  ],
+  "strategy": null,
+  "index": 0,
+  "global": false,
+  "enabled": false,
+  "shareOverLan": false,
+  "isDefault": false,
+  "localPort": 1080,
+  "pacUrl": null,
+  "useOnlinePac": false,
+  "availabilityStatistics": false,
+  "autoCheckUpdate": false,
+  "logViewer": null
+}

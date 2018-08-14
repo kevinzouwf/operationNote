@@ -1,0 +1,62 @@
+一、制作rpm包
+
+#FPM是Ruby模块
+yum -y install ruby rubygems ruby-devel
+#添加淘宝的Ruby仓库
+gem sources -a http://ruby.taobao.org/
+#移除原生的Ruby仓库
+gem sources --remove http://rubygems.org/
+#安装fpm
+gem install fpm
+
+
+fpm -s dir -t rpm -n LNMP5in1 -v 1.0 --description 'cms,discuz,edusoho,wiki,wordpress' -d 'libxslt-devel' --post-install /server/scripts/init.sh  /application /usr/local/libiconv/ /usr/local/lib/ /usr/local/bin/ /app/logs/ /etc/init.d/mysqld
+
+cat init.sh 
+#!/bin/bash
+/usr/sbin/useradd mysql -s /sbin/nologin -M
+/usr/sbin/useradd nginx -M -s /sbin/nologin
+ln -s /application/mysql/lib/libmysqlclient.so.18  /usr/lib64/
+chown -R mysql.mysql /application/mysql/
+chown -R nginx.nginx /application/nginx/html/discuz/data
+cp /application/mysql/support-files/my-small.cnf /etc/
+/etc/init.d/mysqld start
+/application/php/sbin/php-fpm
+/application/nginx/sbin/nginx
+cat >>/etc/rc.local<<EOF
+#nginx+php-fpm by oldboy at 2011
+/etc/init.d/mysqld start
+/application/php/sbin/php-fpm
+/application/nginx/sbin/nginx
+EOF
+
+二、搭建yum服务器
+1、创建yum仓库目录
+mkdir -p /application/yum/centos6.6/x86_64/    
+cd /application/yum/centos6.6/x86_64/
+rz  #上传rpm包到此目录，此目录下面还可以包括文件夹
+
+2、安装createrepo软件
+yum -y install createrepo 
+
+3、初始化repodata索引文件
+createrepo -pdo /application/yum/centos6.6/x86_64/ /application/yum/centos6.6/x86_64/
+
+4、提供yum服务
+#可以用Apache或nginx提供web服务，但用Python的http模块更简单，适用于内网环境
+python -m SimpleHTTPServer 80 &
+python -m SimpleHTTPServer 80 &>/dev/null &   
+
+5、添加新的rpm包
+yumdownloader zlib-devel  #只下载软件不安装
+cp zlib-devel-1.2.3-29.el6.x86_64.rpm /application/yum/centos6.6/x86_64/
+createrepo --update /application/yum/centos6.6/x86_64/   #每加入一个rpm包就要更新一下。
+
+6、客户端配置
+[root@mix x86_64]# vi /etc/yum.repos.d/etiantian.repo 
+[etiantian]
+name=Server
+baseurl=http://yum.etiantian.org
+enabled=1
+gpgcheck=0
+#在CentOS-Base.repo的几个可用源加上enabled=0使其不可用，唯一能用的是etiantian.repo，分发修改过的CentOS-Base.repo文件。要使用外部源，则使用yum --enablerepo=base -y install

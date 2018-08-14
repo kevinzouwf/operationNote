@@ -1,0 +1,101 @@
+判断文件模块
+如果文件存在
+
+如果文件不存在
+
+参数格式模块
+个数判断
+格式判断
+
+功能模块
+添加模块
+如果用户存在
+如果用户不存在
+删除模块
+如果用户存在
+如果用户不存在
+搜索模块
+如果用户存在
+如果用户不存在
+函数
+检查是否存在用户的函数
+添加的函数
+删除的函数
+搜索的函数
+面授-8组—王续W(526938447) 10:17:19
+双击查看原图
+老男孩教育(2934145242) 10:17:29
+#!/bin/sh
+
+if [ $UID -ne 0 ];then
+echo "only root cat exec"
+exit 9
+fi
+
+Path=/etc/user.conf
+if [ ! -f $Path ];then
+touch $Path
+fi
+chmod 700 $Path
+
+if [ 2 -ne $# ];then
+echo "USAGE: sh adduser {-add|-del|-search} username "
+exit 1
+fi
+Age=$1
+User=$2
+
+if [ 0 -lt echo "$User"|grep -E "[^a-z,A-Z,0-9,_]"|wc -l ];then
+echo "The age format is error"
+exit 2
+fi
+
+funCheckUser() {
+check=$(grep -w "$User" $Path|wc -l)
+if [ $check -eq 0 ];then
+return 0
+else
+return 1
+fi
+}
+
+funAddUser() {
+funCheckUser
+if [ $? -eq 0 ];then
+echo "$User" >> $Path
+else
+echo "The user is having"
+exit 3
+fi
+}
+funDelUser() {
+funCheckUser
+if [ $? -eq 0 ];then
+echo "There is no user "
+else
+sed -ri /^$User$/d $Path
+exit 3
+fi
+}
+funSearch() {
+funCheckUser
+if [ $? -eq 0 ];then
+echo "No user match "
+else
+echo "$User is having"
+fi
+}
+case $Age in
+-add)
+funAddUser
+;;
+-del)
+funDelUser
+;;
+-search)
+funSearch
+;;
+*)
+echo "USAGE: sh adduser {-add|-del|-search}username "
+;;
+esac

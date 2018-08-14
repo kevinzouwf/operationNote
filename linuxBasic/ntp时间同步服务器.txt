@@ -1,0 +1,40 @@
+一、搭建时间同步服务器（172.16.1.61）
+1，查看包是否安装
+rpm -qa ntp
+若没有找到
+yum -y install ntp
+2、修改ntp.conf配置文件
+#配置前做好备份
+cd /etc/
+mv ntp.conf ntp.bak.conf
+vi /etc/ntp.conf
+ 14 restrict 127.0.0.1
+ 15 restrict 0.0.0.0 mask 0.0.0.0 nomodify
+ 16 restrict -6 ::1
+ 23 #server 0.centos.pool.ntp.org iburst
+ 24 #server 1.centos.pool.ntp.org iburst
+ 25 #server 2.centos.pool.ntp.org iburst
+ 26 #server 3.centos.pool.ntp.org iburst
+ 27 server  time.nist.gov
+ 28 server 210.72.145.44 prefer
+ 29 server 218.21.130.42
+ 45 server 127.127.1.0   #local clock
+ 46 fudge  127.127.1.0   stratum 10
+3、启动ntp服务
+/etc/init.d/ntpd start
+chkconfig ntpd on
+echo "###start ntp server">>/etc/rc.local
+echo "/etc/init.d/ntpd start" >>/etc/rc.local 
+
+二、配置时间同步客户机
+1、修改ntp.conf配置文件
+#配置前做好备份
+cd /etc/
+mv ntp.conf ntp.bak.conf
+vi /etc/ntp.conf
+ 22 #server 0.centos.pool.ntp.org iburst
+ 23 #server 1.centos.pool.ntp.org iburst
+ 24 #server 2.centos.pool.ntp.org iburst
+ 25 #server 3.centos.pool.ntp.org iburst
+ 26 server  172.16.1.61
+

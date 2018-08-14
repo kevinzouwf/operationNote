@@ -1,0 +1,141 @@
+wget http://mirror.bit.edu.cn/apache/httpd/httpd-2.2.31.tar.gz
+tar xf httpd-2.2.31.tar.gz 
+cd httpd-2.2.31
+
+./configure \
+--prefix=/application/apache2.2.31 \
+--enable-deflate \
+--enable-expires \
+--enable-headers \
+--enable-modules=most \
+--enable-so \
+--with-mpm=worker \
+--enable-rewrite
+
+make && make install
+
+
+
+<VirtualHost *:80>
+    ServerAdmin oldboy@oldboyedu.com
+    DocumentRoot "/application/apache2.2.31/html/www"
+    ServerName www.etiantian.org
+
+    ServerAlias etiantian.org
+    ErrorLog "/app/logs/www-error_log"
+    CustomLog "/app/logs/www-access_log" common
+</VirtualHost>
+
+<VirtualHost *:80>
+    ServerAdmin oldboy@oldboyedu.com
+    DocumentRoot "/application/apache2.2.31/html/bbs"
+    ServerName bbs.etiantian.org
+    ErrorLog "/app/logs/bbs-error_log"
+    CustomLog "/app/logs/bbs-access_log" common
+</VirtualHost>
+
+<VirtualHost *:80>
+    ServerAdmin oldboy@oldboyedu.com
+    DocumentRoot "/application/apache2.2.31/html/blog"
+    ServerName blog.etiantian.org
+    ErrorLog "/app/logs/blog-error_log"
+    CustomLog "/app/logs/blog-access_log" common
+</VirtualHost>
+
+
+[root@web02 extra]# /application/apache/bin/apachectl -t
+Syntax OK
+[root@web02 extra]# /application/apache/bin/apachectl graceful
+
+
+
+安装Apache
+1、下载安装
+yum install zlib-devel -y
+wget http://mirror.bit.edu.cn/apache/httpd/httpd-2.2.31.tar.gz
+tar xf httpd-2.2.31.tar.gz 
+cd httpd-2.2.31
+./configure \
+--prefix=/application/apache2.2.31 \
+--enable-deflate \
+--enable-expires \
+--enable-headers \
+--enable-modules=most \
+--enable-so \
+--with-mpm=worker \
+--enable-rewrite
+make
+make install
+ln -s /application/apache2.2.31/ /application/apache
+ls -l /application/
+2、启动服务
+/application/apache/bin/apachectl start
+netstat -lntup|grep httpd
+3、配置基于域名的虚拟主机
+cd /application/apache/conf/
+vim httpd.conf 修改98行
+
+54  LoadModule php5_module        modules/libphp5.so 
+67  User nginx
+68  Group nginx
+
+99  ServerName 127.0.0.1:80
+
+106 DocumentRoot "/data/www"   
+133 <Directory "/data/www">    
+                                        
+168  DirectoryIndex index.php index.html                                    
+
+
+311  AddType application/x-httpd-php .php .phtml                      |                                                                       
+312  AddType application/x-httpd-php-source .phps 
+380 Include conf/extra/httpd-mpm.conf
+398 Include conf/extra/httpd-vhosts.conf
+
+[root@web02 conf]# cd extra/
+[root@web02 extra]# vim httpd-vhosts.conf 
+
+<VirtualHost *:80>
+    ServerAdmin oldboy@oldboyedu.com
+    DocumentRoot "/data/www/www"
+    ServerName www.etiantian.org
+
+    ServerAlias etiantian.org
+    ErrorLog "/app/logs/www-error_log"
+    CustomLog "/app/logs/www-access_log" common
+</VirtualHost>
+
+<VirtualHost *:80>
+    ServerAdmin oldboy@oldboyedu.com
+    DocumentRoot "/data/www/bbs"
+    ServerName bbs.etiantian.org
+    ErrorLog "/app/logs/bbs-error_log"
+    CustomLog "/app/logs/bbs-access_log" common
+</VirtualHost>
+
+<VirtualHost *:80>
+    ServerAdmin oldboy@oldboyedu.com
+    DocumentRoot "/data/www/blog"
+    ServerName blog.etiantian.org
+    ErrorLog "/app/logs/blog-error_log"
+    CustomLog "/app/logs/blog-access_log" common
+</VirtualHost>
+
+[root@web02 extra]# mkdir -p /application/apache2.2.31/html/{www,bbs,blog}
+[root@web02 extra]# echo www.etiantian.org >/application/apache2.2.31/html/www/index.html
+[root@web02 extra]# echo bbs.etiantian.org >/application/apache2.2.31/html/bbs/index.html
+[root@web02 extra]# echo blog.etiantian.org >/application/apache2.2.31/html/blog/index.html
+[root@web02 extra]# mkdir /app/logs -p
+[root@web02 extra]# /application/apache/bin/apachectl -t
+Syntax OK
+[root@web02 extra]# /application/apache/bin/apachectl graceful
+
+[root@web02 extra]# curl www.etiantian.org                  
+www.etiantian.org
+[root@web02 extra]# curl bbs.etiantian.org
+bbs.etiantian.org
+[root@web02 extra]# curl blog.etiantian.org
+blog.etiantian.org
+
+
+

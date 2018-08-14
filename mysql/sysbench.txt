@@ -1,0 +1,82 @@
+OLTP测试：
+
+测试前准备：
+初始化测试库环境（总共10个测试表，每个表 100000 条记录，填充随机生成的数据）：
+
+cd ~/sysbench/sysbench
+mysqladmin create sbtest
+
+
+./sysbench --mysql-host=127.0.0.1 --mysql-port=3306 --mysql-user=root --mysql-password=123456 --test=tests/db/oltp.lua --oltp_tables_count=10 --oltp-table-size=100000 --rand-init=on prepare
+
+真实测试场景中，数据表建议不低于 10个 ，单表数据量不低于 500万行 ，当然了，要视服务器硬件配置而定。如果是配备了SSD或者PCIE SSD这种高IOPS设备的话，则建议单表数据量最少不低于 1亿行 。
+
+命令参数：
+
+./sysbench --mysql-host=127.0.0.1 --mysql-port=3306 --mysql-user=root \
+--mysql-password=123456 --test=tests/db/oltp.lua --oltp_tables_count=10 \
+--oltp-table-size=10000000 --num-threads=8 --oltp-read-only=off \
+--report-interval=10 --rand-type=uniform --max-time=3600 \
+ --max-requests=0 --percentile=99 run >> ./log/sysbench_oltpX_8_20140921.log
+ 
+ 
+部分选项解释：
+--num-threads=8 表示发起 8个并发连接
+--oltp-read-only=off 表示不要进行只读测试，也就是会采用读写混合模式测试
+--report-interval=10 表示每10秒输出一次测试进度报告
+--rand-type=uniform 表示随机类型为固定模式，其他几个可选随机模式：uniform(固定),gaussian(高斯),special(特定的),pareto(帕累托)
+--max-time=120 表示最大执行时长为 120秒
+--max-requests=0 表示总请求数为 0，因为上面已经定义了总执行时长，所以总请求数可以设定为 0；也可以只设定总请求数，不设定最大执行时长
+--percentile=99 表示设定采样比例，默认是 95%，即丢弃1%的长请求，在剩余的99%里取最大值
+
+测试结果解读：
+sysbench 1.0:  multi-threaded system evaluation benchmark
+
+Running the test with following options:
+Number of threads: 8
+Report intermediate results every 10 second(s)
+Initializing random number generator from current time
+
+
+Initializing worker threads...
+
+Threads started!
+
+[  10s] threads: 8, tps: 489.61, reads: 6877.56, writes: 1962.95, response time: 42.02ms (99%), errors: 1.10, reconnects:  0.00
+[  20s] threads: 8, tps: 519.30, reads: 7276.30, writes: 2079.40, response time: 29.05ms (99%), errors: 0.20, reconnects:  0.00
+[  30s] threads: 8, tps: 500.40, reads: 7004.11, writes: 2000.80, response time: 31.71ms (99%), errors: 0.00, reconnects:  0.00
+[  40s] threads: 8, tps: 518.40, reads: 7255.78, writes: 2073.09, response time: 28.24ms (99%), errors: 0.00, reconnects:  0.00
+[  50s] threads: 8, tps: 504.10, reads: 7059.11, writes: 2016.30, response time: 30.82ms (99%), errors: 0.10, reconnects:  0.00
+[  60s] threads: 8, tps: 466.60, reads: 6534.49, writes: 1867.30, response time: 46.70ms (99%), errors: 0.00, reconnects:  0.00
+[  70s] threads: 8, tps: 448.90, reads: 6285.01, writes: 1796.00, response time: 47.76ms (99%), errors: 0.00, reconnects:  0.00
+[  80s] threads: 8, tps: 401.30, reads: 5616.69, writes: 1605.10, response time: 45.94ms (99%), errors: 0.00, reconnects:  0.00
+[  90s] threads: 8, tps: 419.90, reads: 5879.70, writes: 1678.50, response time: 47.19ms (99%), errors: 0.00, reconnects:  0.00
+[ 100s] threads: 8, tps: 443.80, reads: 6211.71, writes: 1775.20, response time: 45.29ms (99%), errors: 0.00, reconnects:  0.00
+
+
+
+OLTP test statistics:
+    queries performed:
+        read:                            25662308        		 		  --读总数
+        write:                           7332073         		 		  --写总数
+        other:                           3666029	  	 		 		  --其他操作总数(select、insert、update、delete之外的操作，例如commit等)
+        total:                           36660410                   	  --全部总数
+    transactions:                        1833007 (509.16 per sec.)		  --总事务数(每秒事务数)
+    read/write requests:                 32994381 (9165.00 per sec.)	  --读写总数(每秒读写次数)
+    other operations:                    3666029 (1018.33 per sec.)       --其他操作总数(每秒其他操作次数)
+    ignored errors:                      15     (0.00 per sec.)
+    reconnects:                          0      (0.00 per sec.)
+
+General statistics:                                                       --一些统计结果
+    total time:                          3600.0409s 					  --总耗时
+    total number of events:              1833007						  --共发生多少事务数
+    total time taken by event execution: 28796.0367s					  --所有事务耗时相加(不考虑并行因素)
+    response time:														  --响应时长统计
+         min:                                  4.62ms					  --最小耗时
+         avg:                                 15.71ms					  --平均耗时
+         max:                                192.79ms    				  --最长耗时
+         approx.  99 percentile:              30.11ms					  --超过99%平均耗时
+
+Threads fairness:
+    events (avg/stddev):           229125.8750/1068.15
+    execution time (avg/stddev):   3599.5046/0.00

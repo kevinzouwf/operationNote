@@ -1,0 +1,107 @@
+user  nginx;
+worker_processes  1;
+events {
+    worker_connections  4096;
+}
+
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+
+    log_format  main  '$remote_addr $http_x_forwarded_for - $remote_user [$time_local] "$request" $http_user_agent '
+                      '$status $body_bytes_sent "$http_referer" '
+  #  WAF
+     lua_shared_dict limit 50m;
+     lua_package_path "/usr/local/openresty/nginx/conf/waf/?.lua";
+     init_by_lua_file "/usr/local/openresty/nginx/conf/waf/init.lua";
+     access_by_lua_file "/usr/local/openresty/nginx/conf/waf/access.lua";   
+    
+    
+    autoindex off;
+    server_tokens off;
+    client_max_body_size 20m;
+ #   fastcgi_cache_path /dev/shm/fastcgi_cache levels=1:2 keys_zone=cache_php:30m inactive=1d max_size=1G;  
+
+    sendfile        on;
+    tcp_nopush     on;
+    tcp_nodelay		on;
+    keepalive_timeout  65;
+    gzip on;
+    gzip_min_length  1k;
+    gzip_buffers     4 32k;
+    gzip_http_version 1.1;
+    gzip_comp_level 5;
+    gzip_types  text/css text/xml application/javascript; 
+    gzip_vary on;
+
+    server {
+        listen       80 default_server;
+        server_name  _;
+   	return 501;
+   	}
+    server {
+    listen       80;
+    server_name  chuck-blog.com;
+    return       301 http://www.chuck-blog.com$request_uri;
+}
+    server {
+        listen       80;
+        server_name  www.chuck-blog.com;
+
+        access_log  logs/chuck-blog.access.log  main;
+        error_log logs/chuck-blog.error.log ;
+        root   /data/www;
+        location / {
+            index  index.php index.html index.htm;
+	    try_files $uri $uri/ /index.php?$args;
+        error_page  404              /404.html;
+
+        error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+            root   html;
+        }
+        }
+        location ~ \.php$ {
+            fastcgi_pass   127.0.0.1:9000;
+	    fastcgi_connect_timeout 300;  
+	    fastcgi_send_timeout 300;  
+	    fastcgi_read_timeout 300;  
+	    fastcgi_buffer_size 64k;  
+	    fastcgi_buffers 4 64k;  
+	    fastcgi_busy_buffers_size 128k;  
+	    fastcgi_temp_file_write_size 128k;  
+	    fastcgi_cache_key $host$request_uri;
+	#    fastcgi_cache cache_php;  
+	    fastcgi_cache_valid 200 302 1h;  
+	    fastcgi_cache_valid 301 1d;  
+	    fastcgi_cache_valid any 1m; 
+            fastcgi_index  index.php;
+            include        fastcgi.conf;
+           }
+      #  location = /
+      #  {
+      #          auth_basic "Welcome to www.chuck-blog.com";
+      #          auth_basic_user_file /usr/local/openresty/nginx/conf/htpasswd.conf; 
+      #  }
+        location = /
+        {
+                if (-f $request_filename/index.html){
+                rewrite (.*) $1/index.html break;
+          }
+                if (-f $request_filename/index.php){
+                rewrite (.*) $1/index.php;
+          }
+                if (!-f $request_filename){
+                rewrite (.*) /index.php;
+          }
+      }
+           location = /b/123.png {
+                if ( $http_user_agent  ~  "(Android)|(iPhone)|(iPad)|(iPhone)")
+                {
+                        rewrite ^(.*)$ /b/123_50.png break ;
+               }
+
+       }
+    }
+  }

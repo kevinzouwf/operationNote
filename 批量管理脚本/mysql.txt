@@ -1,0 +1,142 @@
+5.3.27
+--with-mysql=/application/mysql 替代为 --with-mysql=mysqlnd
+
+生产案例亲测------php5.5.29不装mysql的参数 
+--with-mysql=mysqlnd \
+--with-mysqli=mysqlnd \
+--with-pdo-mysql=mysqlnd \
+
+MySQL数据库：
+分类：
+1，社区版
+2，商业版
+3，cluster集群
+mysql版本：
+5.1===lamp=====5.1.72 编译configure，make，make install
+5.2===lnmp=====5.5.32编译cmake，make，make install
+	参考资料：http://oldboy.blog.51cto.com/2561410/1240412
+5.6
+5.7
+
+除了编译，还有更简单的方法，yum/rpm
+mysql安装方法：
+1.编译5.1，5.5不同
+2.yum/rpm
+3.二进制包，直接解压，初始化数据库即可，无需编译。dba=====lnmp
+
+==========================mysql 安装============================
+#解压包组
+tar xf mysql-5.5.32-linux2.6-x86_64.tar.gz 
+
+#添加用户
+useradd -M -s /sbin/nologin mysql
+
+#移动到指定目录/application并改名/mysql-5.5.32
+mv mysql-5.5.32-linux2.6-x86_64 /application/mysql-5.5.32
+
+#创建软连接
+ln -s /application/mysql-5.5.32/ /application/mysql
+#初始化数据库
+/application/mysql/scripts/mysql_install_db --basedir=/application/mysql/ --datadir=/application/mysql/data/ --user=mysql
+
+1.#给目录添加属主，组权限
+chown -R mysql.mysql /application/mysql/
+
+cp /application/mysql/support-files/my-small.cnf  /etc/my.cnf
+
+2.#配置启动MySQL，因为二进制包默认安装目录为/usr/local
+sed -i 's#/usr/local/mysql#/application/mysql#g' /application/mysql/bin/mysqld_safe
+3#第一种启动mysql的方法mysql密码忘记用下面路径启动
+/application/mysql/bin/mysqld_safe
+4.#连接数据库命令
+/application/mysql/bin/mysql
+5.#第二种启动mysql的方法	常规启动方法
+\cp /application/mysql/support-files/mysql.server /etc/init.d/mysqld
+sed -i 's#/usr/local/mysql#/application/mysql#g' /etc/init.d/mysqld
+/etc/init.d/mysqld  start
+
+
+6.#添加全局变量环境执行mysql进入数据库
+echo 'PATH="/application/mysql/bin:$PATH"' >>/etc/profile
+source /etc/profile
+
+7.#给mysql设置密码
+/application/mysql/bin/mysqladmin -u root password 'new-password'
+/application/mysql/bin/mysqladmin -u root -h mysql password 'new-password'
+	1. 设置新密码
+[root@mysql mysql]# /application/mysql/bin/mysqladmin -uroot password
+New password:   此处输入密码
+Confirm new password: 重复上面的密码
+	默认密码：new-password
+	2. 修改密码
+[root@mysql mysql]# mysqladmin -uroot -p password
+Enter password:  输入你的旧密码
+New password: 此处输入密码
+Confirm new password: 重复上面的密码
+
+8.#输入用户密码登录mysql
+mysql -uroot -p
+
+========================================================
+mysql二进制包初始化数据库错误：
+Installing MySQL system tables...
+ERROR: 1005  Can't create table 'tmp_db' (errno: 13)
+151120 17:00:10 [ERROR] Aborting
+151120 17:00:10 [Note] /application/mysql//bin/mysqld: Shutdown complete
+Installation of system tables failed!  Examine the logs in
+/application/mysql/data/ for more information.
+
+原因：
+/tmp目录在以前实验权限被更改，tmp目录的权限是1777。
+[root@mysql tools]# ll -d /tmp/  -->默认权限
+drwxrwxrwt. 3 root root 4096 11月 20 17:08 /tmp/
+[root@mysql tools]# chmod -R 1777 /tmp/
+
+错误二：系统文件受损
+[root@Web-Lnmp02 mysql]# /application/mysql/scripts/mysql_install_db --basedir=/application/mysql/ --datadir=/application/mysql/data/ --user=mysql
+Installing MySQL system tables...
+/application/mysql//bin/mysqld: error while loading shared libraries: libaio.so.1: cannot open shared object file: No such file or directory
+
+原因：
+[root@mysql tools]# ll -h /usr/lib64/libaio.so
+lrwxrwxrwx 1 root root 22 11月 20 17:28 /usr/lib64/libaio.so -> /lib64/libaio.so.1.0.1
+#　/lib64/libaio.so.1.0.1丢失。
+1. yum install libaio-devel -y
+2. 然后到其他正常机器找到这个文件/lib64/libaio.so.1.0.1
+=======================================================
+[root@hyg mysql]# /etc/init.d/mysqld start
+Starting MySQL.. ERROR! The server quit without updating PID file (/var/lib/mysql/hyg.pid).
+ 错误原因：没有复制配置文件
+cp /application/mysql/support-files/my-small.cnf  /etc/my.cnf
+
+
+数据db在下面
+[root@web01 etc]# ll /application/mysql/data/
+total 28692
+-rw-rw---- 1 mysql mysql 18874368 Nov 21 15:37 ibdata1
+-rw-rw---- 1 mysql mysql  5242880 Nov 21 15:40 ib_logfile0
+-rw-rw---- 1 mysql mysql  5242880 Nov 21 15:36 ib_logfile1
+drwx------ 2 mysql root      4096 Nov 21 15:32 mysql
+drwx------ 2 mysql mysql     4096 Nov 21 15:42 performance_schema
+drwxr-xr-x 2 mysql root      4096 Nov 21 15:28 test
+-rw-r----- 1 mysql root      3452 Nov 21 15:40 web01.err
+-rw-rw---- 1 mysql mysql        5 Nov 21 15:40 web01.pid
+
+
+
+
+
+mysql> drop database test;
+mysql> select user,host from mysql.user;
+mysql> drop user ''@'web01';
+
+
+
+
+源码安装
+场景是：主机修改名重启后启服务报错。排错
+[root@server-241 data]# service mysqld restart
+MySQL server PID file could not be found!                  [FAILED]
+Starting MySQL...The server quit without updating PID file [FAILED]rograms/mysql/data/server-241.pid).
+
+原因：

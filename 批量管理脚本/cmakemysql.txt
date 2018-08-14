@@ -1,0 +1,58 @@
+#!/bin/sh
+. /etc/init.d/functions
+
+Dir="/usr/local"
+SoftDir="/usr/local/src"
+date=$(date +%F_%H:%M)
+
+function Msg () {
+if [ $? -eq 0 ];then
+  action "$1" /bin/true
+else
+  action "$1" /bin/false
+ exit 1
+ fi
+}
+
+function User () {
+use=`grep "mysql" /etc/passwd|wc -l`
+if [ $use -ne 1 ];then
+	/usr/sbin/useradd  mysql -s /sbin/nologin -M &>/dev/null
+fi
+ Msg "mkdir&user"
+}
+
+function installmysql () {
+yum install -y ncurses-devel libaio-deve cmake >/dev/null && \
+cd $SoftDir && \
+tar zxf mysql-5.5.32.tar.gz && cd mysql-5.5.32 && \
+cmake . -DCMAKE_INSTALL_PREFIX=/usr/local/mysql-5.5.32 \
+DMYSQL_DATADIR=/usr/local/mysql-5.5.32/data \
+DMYSQL_UNIX_ADDR=/usr/local/mysql-5.5.32/tmp/mysql.sock \
+DDEFAULT_CHARSET=utf8 \
+DDEFAULT_COLLATION=utf8_general_ci \
+-DEXTRA_CHARSETS=gbk,gb2312,utf8,ascii \
+-DENABLED_LOCAL_INFILE=ON \
+-DWITH_INNOBASE_STORAGE_ENGINE=1 \
+-DWITH_FEDERATED_STORAGE_ENGINE=1 \
+-DWITH_BLACKHOLE_STORAGE_ENGINE=1 \
+-DWITHOUT_EXAMPLE_STORAGE_ENGINE=1 \
+-DWITHOUT_PARTITION_STORAGE_ENGINE=1 \
+-DWITH_FAST_MUTEXES=1 \
+-DWITH_ZLIB=bundled \
+-DENABLED_LOCAL_INFILE=1 \
+-DWITH_READLINE=1 \
+-DWITH_EMBEDDED_SERVER=1 \
+-DWITH_DEBUG=0
+
+make >/dev/null && make install >/dev/null 
+
+  Msg "make and install"
+}
+
+function main () {
+User
+installmysql
+}
+
+main &>>/var/log/shell.log

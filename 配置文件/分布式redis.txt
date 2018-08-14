@@ -1,0 +1,417 @@
+#redis 分布式集群
+一、说明
+    redis 3.0集群功能出来已经有一段时间了，目前最新稳定版是3.0.5，我了解到已经有很多互联网公司在生产环境使用，比如唯品会、美团等等，刚好公司有个新项目，预估的量单机redis无法满足，开发又不想在代码层面做拆分，所以就推荐他们尝试一下redis集群，下面做了一些相关笔记，以备后用
+二、环境
+1、redis节点
+
+10.10.2.70:6300  10.10.2.70:6301 主从
+10.10.2.71:6300  10.10.2.71:6301 主从
+10.10.2.85:6300  10.10.2.85:6301  主从
+2、redis版本
+
+Redis version 3.0.5
+三、安装配置
+1、安装redis
+
+wget http://download.redis.io/releases/redis-3.0.5.tar.gz
+tar -zxvf redis-3.0.5.tar.gz
+cd redis-3.0.5
+make
+ 
+cp redis-3.0.5/src/redis-trib.rb /bin/
+cp redis-3.0.5/src/redis-server /bin/
+cp redis-3.0.5/src/redis-cli    /bin/
+2、安装ruby及ruby的redis模块
+
+yum -y install ruby rubygems
+gem install redis --version 3.0.5
+3、内核调优
+
+echo never > /sys/kernel/mm/transparent_hugepage/enabled
+echo "vm.overcommit_memory = 1" >> /etc/sysctl.conf  
+sysctl -p
+4、建立目录
+
+mkdir /data/redis/6300 -p
+mkdir /data/redis/6301
+5、撰写redis配置文件（cp配置文件注意修改端口）
+
+
+vim  /etc/redis_6300.conf
+daemonize yes
+port 6300
+tcp-backlog 511
+timeout 0
+tcp-keepalive 0
+loglevel notice
+maxmemory 10gb
+databases 16
+dir /data/redis/6300
+slave-serve-stale-data yes
+loglevel notice
+logfile "/data/redis/6300/redis_6300.log"
+#slave只读
+slave-read-only yes
+#not use default
+repl-disable-tcp-nodelay yes
+slave-priority 100
+#打开aof持久化
+appendonly yes
+#每秒一次aof写
+appendfsync everysec
+#关闭在aof rewrite的时候对新的写操作进行fsync
+no-appendfsync-on-rewrite yes
+auto-aof-rewrite-min-size 64mb
+lua-time-limit 5000
+#打开redis集群
+cluster-enabled yes
+cluster-config-file /data/redis/6300/nodes-6300.conf
+#节点互连超时的阀值（单位毫秒）
+cluster-node-timeout 15000
+#一个主节点在拥有多少个好的从节点的时候就要割让一个从节点出来给其他没有从节点或者从节点挂掉的主节点
+cluster-migration-barrier 1
+#如果某一些key space没有被集群中任何节点覆盖，最常见的就是一个node挂掉，集群将停止接受写入
+cluster-require-full-coverage no
+#部署在同一机器的redis实例，把auto-aof-rewrite搓开，防止瞬间fork所有redis进程做rewrite,占用大量内存
+auto-aof-rewrite-percentage 80-100
+slowlog-log-slower-than 10000
+slowlog-max-len 128
+notify-keyspace-events ""
+hash-max-ziplist-entries 512
+hash-max-ziplist-value 64
+list-max-ziplist-entries 512
+list-max-ziplist-value 64
+set-max-intset-entries 512
+zset-max-ziplist-entries 128
+zset-max-ziplist-value 64
+activerehashing yes
+client-output-buffer-limit normal 0 0 0
+client-output-buffer-limit slave 256mb 64mb 60
+client-output-buffer-limit pubsub 32mb 8mb 60
+hz 10
+aof-rewrite-incremental-fsync yes
+6、启动服务
+
+redis-server /etc/redis_6300.conf
+redis-server /etc/redis_6301.conf
+echo "redis-server /etc/redis_6300.conf" >> /etc/rc.local
+echo "redis-server /etc/redis_6301.conf" >> /etc/rc.local
+7、初始化集群
+
+#节点角色由顺序决定,先master之后是slave，本文中6300是master，6301是slave
+redis-trib.rb create --replicas 1 10.10.2.70:6300 10.10.2.71:6300  10.10.2.85:6300  10.10.2.70:6301 10.10.2.71:6301  10.10.2.85:6301
+8、查看集群状态
+1
+redis-trib.rb check 10.10.2.70:6300
+PS：
+redis-trib.rb是一个ruby工具，封装了redis集群的一些命令，用这个工具操作集群非常方便，比如上面初始化集群，查看集群状态，还有添加、删除节点，迁移slot等等功能
+四、redis集群维护
+A、场景1
+线上的集群已经有瓶颈，集群需要扩容，比如我们已经准备了一主一从（10.10.2.85:6302、10.10.2.85:6303），如下：
+1、添加一个主节点
+
+
+[root@yw_0_0 ~]# redis-trib.rb add-node 10.10.2.85:6302 10.10.2.70:6300
+>>> Adding node 10.10.2.85:6302 to cluster 10.10.2.70:6300
+Connecting to node 10.10.2.70:6300: OK
+Connecting to node 10.10.2.85:6300: OK
+Connecting to node 10.10.2.85:6301: OK
+Connecting to node 10.10.2.71:6300: OK
+Connecting to node 10.10.2.70:6301: OK
+Connecting to node 10.10.2.71:6301: OK
+>>> Performing Cluster Check (using node 10.10.2.70:6300)
+S: cd1f2c1f348bb4359337e7462c1e21dc82f1551b 10.10.2.70:6300
+   slots: (0 slots) slave
+   replicates 85412cf3d8e69354115fc0991f470b32b9213cd7
+M: 6bea6afa2ee8dfb0cc3c96f804eb3fa77ce98013 10.10.2.85:6300
+   slots:0-5460 (5461 slots) master
+   1 additional replica(s)
+S: a74642c0fbc98f921be477eabcdd22eccd89891f 10.10.2.85:6301
+   slots: (0 slots) slave
+   replicates 2568dbd91fffa16ff93ea8db19275fd7ec8af41a
+M: 2568dbd91fffa16ff93ea8db19275fd7ec8af41a 10.10.2.71:6300
+   slots:5461-10922 (5462 slots) master
+   1 additional replica(s)
+M: 85412cf3d8e69354115fc0991f470b32b9213cd7 10.10.2.70:6301
+   slots:10923-16383 (5461 slots) master
+   1 additional replica(s)
+S: 22d2dec483824b84571a60e8c037fff957615552 10.10.2.71:6301
+   slots: (0 slots) slave
+   replicates 6bea6afa2ee8dfb0cc3c96f804eb3fa77ce98013
+[OK] All nodes agree about slots configuration.
+>>> Check for open slots...
+>>> Check slots coverage...
+[OK] All 16384 slots covered.
+Connecting to node 10.10.2.85:6302: OK
+>>> Send CLUSTER MEET to node 10.10.2.85:6302 to make it join the cluster.
+[OK] New node added correctly.
+10.10.2.85:6302是要加的新节点，10.10.2.70:6300是集群中已存在的任意节点
+2、给主节点添加从节点
+
+[root@yw_0_0 ~]# redis-trib.rb add-node --slave --master-id 5ef18f95f75756891aa948ea1f200044f1d3947c 10.10.2.85:6303 10.10.2.70:6300
+>>> Adding node 10.10.2.85:6303 to cluster 10.10.2.70:6300
+Connecting to node 10.10.2.70:6300: OK
+Connecting to node 10.10.2.85:6300: OK
+Connecting to node 10.10.2.85:6302: OK
+Connecting to node 10.10.2.85:6301: OK
+Connecting to node 10.10.2.71:6300: OK
+Connecting to node 10.10.2.70:6301: OK
+Connecting to node 10.10.2.71:6301: OK
+>>> Performing Cluster Check (using node 10.10.2.70:6300)
+S: cd1f2c1f348bb4359337e7462c1e21dc82f1551b 10.10.2.70:6300
+   slots: (0 slots) slave
+   replicates 85412cf3d8e69354115fc0991f470b32b9213cd7
+M: 6bea6afa2ee8dfb0cc3c96f804eb3fa77ce98013 10.10.2.85:6300
+   slots:0-5460 (5461 slots) master
+   1 additional replica(s)
+M: 5ef18f95f75756891aa948ea1f200044f1d3947c 10.10.2.85:6302
+   slots: (0 slots) master
+   0 additional replica(s)
+S: a74642c0fbc98f921be477eabcdd22eccd89891f 10.10.2.85:6301
+   slots: (0 slots) slave
+   replicates 2568dbd91fffa16ff93ea8db19275fd7ec8af41a
+M: 2568dbd91fffa16ff93ea8db19275fd7ec8af41a 10.10.2.71:6300
+   slots:5461-10922 (5462 slots) master
+   1 additional replica(s)
+M: 85412cf3d8e69354115fc0991f470b32b9213cd7 10.10.2.70:6301
+   slots:10923-16383 (5461 slots) master
+   1 additional replica(s)
+S: 22d2dec483824b84571a60e8c037fff957615552 10.10.2.71:6301
+   slots: (0 slots) slave
+   replicates 6bea6afa2ee8dfb0cc3c96f804eb3fa77ce98013
+[OK] All nodes agree about slots configuration.
+>>> Check for open slots...
+>>> Check slots coverage...
+[OK] All 16384 slots covered.
+Connecting to node 10.10.2.85:6303: OK
+>>> Send CLUSTER MEET to node 10.10.2.85:6303 to make it join the cluster.
+Waiting for the cluster to join.
+>>> Configure node as replica of 10.10.2.85:6302.
+[OK] New node added correctly.
+--slave 指定要加的是从节点，--master-id 指定这个从节点的主节点ID，10.10.2.85:6303是需要新加的从节点，10.10.2.70:6300是集群已存在的任意节点
+3、迁移一些slot给新节点
+
+
+[root@yw_0_0 ~]# redis-trib.rb reshard 10.10.2.70:6300
+Connecting to node 10.10.2.70:6300: OK
+Connecting to node 10.10.2.85:6300: OK
+Connecting to node 10.10.2.85:6303: OK
+Connecting to node 10.10.2.85:6302: OK
+Connecting to node 10.10.2.85:6301: OK
+Connecting to node 10.10.2.71:6300: OK
+Connecting to node 10.10.2.70:6301: OK
+Connecting to node 10.10.2.71:6301: OK
+>>> Performing Cluster Check (using node 10.10.2.70:6300)
+S: cd1f2c1f348bb4359337e7462c1e21dc82f1551b 10.10.2.70:6300
+   slots: (0 slots) slave
+   replicates 85412cf3d8e69354115fc0991f470b32b9213cd7
+M: 6bea6afa2ee8dfb0cc3c96f804eb3fa77ce98013 10.10.2.85:6300
+   slots:0-5460 (5461 slots) master
+   1 additional replica(s)
+S: fc90d090fae909fd4f962752941c039d081d3854 10.10.2.85:6303
+   slots: (0 slots) slave
+   replicates 5ef18f95f75756891aa948ea1f200044f1d3947c
+M: 5ef18f95f75756891aa948ea1f200044f1d3947c 10.10.2.85:6302
+   slots: (0 slots) master
+   1 additional replica(s)
+S: a74642c0fbc98f921be477eabcdd22eccd89891f 10.10.2.85:6301
+   slots: (0 slots) slave
+   replicates 2568dbd91fffa16ff93ea8db19275fd7ec8af41a
+M: 2568dbd91fffa16ff93ea8db19275fd7ec8af41a 10.10.2.71:6300
+   slots:5461-10922 (5462 slots) master
+   1 additional replica(s)
+M: 85412cf3d8e69354115fc0991f470b32b9213cd7 10.10.2.70:6301
+   slots:10923-16383 (5461 slots) master
+   1 additional replica(s)
+S: 22d2dec483824b84571a60e8c037fff957615552 10.10.2.71:6301
+   slots: (0 slots) slave
+   replicates 6bea6afa2ee8dfb0cc3c96f804eb3fa77ce98013
+[OK] All nodes agree about slots configuration.
+>>> Check for open slots...
+>>> Check slots coverage...
+[OK] All 16384 slots covered.
+How many slots do you want to move (from 1 to 16384)? 3000  #设置需要把3000个slot做移动
+What is the receiving node ID? 5ef18f95f75756891aa948ea1f200044f1d3947c  #设置接收这3000个slot的节点ID，也就是刚才新加的10.10.2.85:6302的ID
+Please enter all the source node IDs.
+  Type 'all' to use all the nodes as source nodes for the hash slots.
+  Type 'done' once you entered all the source nodes IDs.
+Source node #1:85412cf3d8e69354115fc0991f470b32b9213cd7   #设置这3000slot的来源ID，这里我从集群之前的3个节点分别去取一部分slot
+Source node #2:6bea6afa2ee8dfb0cc3c96f804eb3fa77ce98013    #设置这3000slot的来源ID，这里我从集群之前的3个节点分别去取一部分slot
+Source node #3:2568dbd91fffa16ff93ea8db19275fd7ec8af41a      #设置这3000slot的来源ID，这里我从集群之前的3个节点分别去取一部分slot
+Source node #4:done   #输入done开始做一些初始化操作
+此处省略
+Do you want to proceed with the proposed reshard plan (yes/no)? yes  输入yes确认开始迁移slot
+B、场景二
+    上面的例子是集群扩容，相对的，由于各种原因集群可能也需要缩容，下面的例子把上文扩容的节点下线，步骤如下：
+1、迁移这个节点的slot到其他节点（有slot的节点是不可以直接下线的）
+
+```
+[root@yw_0_0 ~]# redis-trib.rb reshard 10.10.2.70:6300
+Connecting to node 10.10.2.70:6300: OK
+Connecting to node 10.10.2.85:6300: OK
+Connecting to node 10.10.2.85:6303: OK
+Connecting to node 10.10.2.85:6302: OK
+Connecting to node 10.10.2.85:6301: OK
+Connecting to node 10.10.2.71:6300: OK
+Connecting to node 10.10.2.70:6301: OK
+Connecting to node 10.10.2.71:6301: OK
+>>> Performing Cluster Check (using node 10.10.2.70:6300)
+S: cd1f2c1f348bb4359337e7462c1e21dc82f1551b 10.10.2.70:6300
+   slots: (0 slots) slave
+   replicates 85412cf3d8e69354115fc0991f470b32b9213cd7
+M: 6bea6afa2ee8dfb0cc3c96f804eb3fa77ce98013 10.10.2.85:6300
+   slots:999-5460 (4462 slots) master
+   1 additional replica(s)
+S: fc90d090fae909fd4f962752941c039d081d3854 10.10.2.85:6303
+   slots: (0 slots) slave
+   replicates 5ef18f95f75756891aa948ea1f200044f1d3947c
+M: 5ef18f95f75756891aa948ea1f200044f1d3947c 10.10.2.85:6302
+   slots:0-998,5461-6461,10923-11921 (2999 slots) master
+   1 additional replica(s)
+S: a74642c0fbc98f921be477eabcdd22eccd89891f 10.10.2.85:6301
+   slots: (0 slots) slave
+   replicates 2568dbd91fffa16ff93ea8db19275fd7ec8af41a
+M: 2568dbd91fffa16ff93ea8db19275fd7ec8af41a 10.10.2.71:6300
+   slots:6462-10922 (4461 slots) master
+   1 additional replica(s)
+M: 85412cf3d8e69354115fc0991f470b32b9213cd7 10.10.2.70:6301
+   slots:11922-16383 (4462 slots) master
+   1 additional replica(s)
+S: 22d2dec483824b84571a60e8c037fff957615552 10.10.2.71:6301
+   slots: (0 slots) slave
+   replicates 6bea6afa2ee8dfb0cc3c96f804eb3fa77ce98013
+[OK] All nodes agree about slots configuration.
+>>> Check for open slots...
+>>> Check slots coverage...
+[OK] All 16384 slots covered.
+How many slots do you want to move (from 1 to 16384)? 3000 #上文给这个节点迁入了3000个slot，所以这里还选择迁出3000个slot
+What is the receiving node ID? 85412cf3d8e69354115fc0991f470b32b9213cd7 #接收这3000slot节点的主ID
+Please enter all the source node IDs.
+  Type 'all' to use all the nodes as source nodes for the hash slots.
+  Type 'done' once you entered all the source nodes IDs.
+Source node #1:5ef18f95f75756891aa948ea1f200044f1d3947c  #要下线节点的主ID
+Source node #4:done
+此处省略
+Do you want to proceed with the proposed reshard plan (yes/no)?yes
+2、然后查看10.10.2.85:6302这个maser上已经没有slot了
+
+10.10.2.71:6300> cluster nodes
+85412cf3d8e69354115fc0991f470b32b9213cd7 10.10.2.70:6301 master - 0 1445853133399 12 connected 0-999 6462-7460 10923-16383
+22d2dec483824b84571a60e8c037fff957615552 10.10.2.71:6301 slave 6bea6afa2ee8dfb0cc3c96f804eb3fa77ce98013 0 1445853132898 10 connected
+6bea6afa2ee8dfb0cc3c96f804eb3fa77ce98013 10.10.2.85:6300 master - 0 1445853134400 10 connected 1000-5461
+2568dbd91fffa16ff93ea8db19275fd7ec8af41a 10.10.2.71:6300 myself,master - 0 0 11 connected 5462-6461 7461-10922
+cd1f2c1f348bb4359337e7462c1e21dc82f1551b 10.10.2.70:6300 slave 85412cf3d8e69354115fc0991f470b32b9213cd7 0 1445853131395 12 connected
+fc90d090fae909fd4f962752941c039d081d3854 10.10.2.85:6303 slave 5ef18f95f75756891aa948ea1f200044f1d3947c 0 1445853133899 8 connected
+a74642c0fbc98f921be477eabcdd22eccd89891f 10.10.2.85:6301 slave 2568dbd91fffa16ff93ea8db19275fd7ec8af41a 0 1445853129394 11 connected
+5ef18f95f75756891aa948ea1f200044f1d3947c 10.10.2.85:6302 master - 0 1445853132397 8 connected
+```
+3、下线slave节点
+
+[root@yw_0_0 ~]# redis-trib.rb del-node 10.10.2.85:6303 fc90d090fae909fd4f962752941c039d081d3854
+>>> Removing node fc90d090fae909fd4f962752941c039d081d3854 from cluster 10.10.2.85:6303
+Connecting to node 10.10.2.85:6303: OK
+Connecting to node 10.10.2.85:6301: OK
+Connecting to node 10.10.2.85:6302: OK
+Connecting to node 10.10.2.85:6300: OK
+Connecting to node 10.10.2.70:6300: OK
+Connecting to node 10.10.2.71:6301: OK
+Connecting to node 10.10.2.70:6301: OK
+Connecting to node 10.10.2.71:6300: OK
+>>> Sending CLUSTER FORGET messages to the cluster...
+>>> SHUTDOWN the node.
+4、下线master节点
+
+redis-trib.rb del-node 10.10.2.70:6301 5ef18f95f75756891aa948ea1f200044f1d3947c
+>>> Removing node 5ef18f95f75756891aa948ea1f200044f1d3947c from cluster 10.10.2.70:6301
+Connecting to node 10.10.2.70:6301: OK
+Connecting to node 10.10.2.71:6300: OK
+Connecting to node 10.10.2.85:6301: OK
+Connecting to node 10.10.2.71:6301: OK
+Connecting to node 10.10.2.85:6302: OK
+Connecting to node 10.10.2.70:6300: OK
+Connecting to node 10.10.2.85:6300: OK
+>>> Sending CLUSTER FORGET messages to the cluster...
+>>> SHUTDOWN the node.
+C、场景三
+   集群中一个节点的master挂掉，从节点提升为主节点，还没有来的急给这个新的主节点加从节点，这个新的主节点就又挂掉了，那么集群中这个节点就彻底不可以用了，为了解决这个问题，我们至少保证每个节点的maser下面有两个以上的从节点，这样一来，需要的内存资源或者服务器资源就翻倍了，有没有一个折中的方法呢，答案是肯定的，还节点上文配置文件中的cluster-migration-barrier参数不，我们只需要给集群中其中一个节点的master挂多个从库，当其他节点的master下没有可用的从库时，有多个从库的master会割让一个slave给他，保证整个集群的可用性
+1、给10.10.2.70:6300  10.10.2.70:6301 这组节点下面加一个从库10.10.2.85:6302
+
+```
+[root@yw_0_0 ~]# redis-trib.rb add-node --slave --master-id cd1f2c1f348bb4359337e7462c1e21dc82f1551b 10.10.2.85:6302 10.10.2.70:6300
+>>> Adding node 10.10.2.85:6302 to cluster 10.10.2.70:6300
+Connecting to node 10.10.2.70:6300: OK
+Connecting to node 10.10.2.85:6300: OK
+Connecting to node 10.10.2.71:6300: OK
+Connecting to node 10.10.2.70:6301: OK
+Connecting to node 10.10.2.85:6301: OK
+Connecting to node 10.10.2.71:6301: OK
+>>> Performing Cluster Check (using node 10.10.2.70:6300)
+M: cd1f2c1f348bb4359337e7462c1e21dc82f1551b 10.10.2.70:6300
+   slots:3000-5461,6462-7460,10923-16383 (8922 slots) master
+   1 additional replica(s)
+M: e36cdef7a26ed59e8d9db2cf1dbc1997bfc9dfde 10.10.2.85:6300
+   slots:0-2999 (3000 slots) master
+   1 additional replica(s)
+M: 2568dbd91fffa16ff93ea8db19275fd7ec8af41a 10.10.2.71:6300
+   slots:5462-6461,7461-10922 (4462 slots) master
+   1 additional replica(s)
+S: 85412cf3d8e69354115fc0991f470b32b9213cd7 10.10.2.70:6301
+   slots: (0 slots) slave
+   replicates cd1f2c1f348bb4359337e7462c1e21dc82f1551b
+S: 89fcc4994a99ed2fe9bbb908c58dfda2cf31e7d2 10.10.2.85:6301
+   slots: (0 slots) slave
+   replicates e36cdef7a26ed59e8d9db2cf1dbc1997bfc9dfde
+S: 1f3ea36eacbe005a4b9ac52aeef6d83337dac051 10.10.2.71:6301
+   slots: (0 slots) slave
+   replicates 2568dbd91fffa16ff93ea8db19275fd7ec8af41a
+[OK] All nodes agree about slots configuration.
+>>> Check for open slots...
+>>> Check slots coverage...
+[OK] All 16384 slots covered.
+Connecting to node 10.10.2.85:6302: OK
+>>> Send CLUSTER MEET to node 10.10.2.85:6302 to make it join the cluster.
+Waiting for the cluster to join.
+>>> Configure node as replica of 10.10.2.70:6300.
+[OK] New node added correctly.
+2、把10.10.2.71:6300  10.10.2.71:6301这组的从节点停掉
+1
+redis-cli -h 10.10.2.71 -p 6301 shutdown
+3、查看10.10.2.85:6302这个节点是否成为10.10.2.71：6300的从库
+
+10.10.2.71:6300> CLUSTER nodes
+85412cf3d8e69354115fc0991f470b32b9213cd7 10.10.2.70:6301 slave cd1f2c1f348bb4359337e7462c1e21dc82f1551b 0 1445911596844 17 connected
+89fcc4994a99ed2fe9bbb908c58dfda2cf31e7d2 10.10.2.85:6301 slave e36cdef7a26ed59e8d9db2cf1dbc1997bfc9dfde 0 1445911594841 20 connected
+2568dbd91fffa16ff93ea8db19275fd7ec8af41a 10.10.2.71:6300 myself,master - 0 0 11 connected 5462-6461 7461-10922
+cd1f2c1f348bb4359337e7462c1e21dc82f1551b 10.10.2.70:6300 master - 0 1445911593839 17 connected 3000-5461 6462-7460 10923-16383
+2b34532cd6937063d1da26cd4652881b73d97a06 10.10.2.85:6302 slave 2568dbd91fffa16ff93ea8db19275fd7ec8af41a 0 1445911592838 17 connected  #已成功挂到了10.10.2.71:6300下
+1f3ea36eacbe005a4b9ac52aeef6d83337dac051 10.10.2.71:6301 slave,fail 2568dbd91fffa16ff93ea8db19275fd7ec8af41a 1445911561982 1445911559778 11 disconnected
+e36cdef7a26ed59e8d9db2cf1dbc1997bfc9dfde 10.10.2.85:6300 master - 0 1445911595843 20 connected 0-2999
+五、cluster相关命令
+
+集群
+CLUSTER INFO 打印集群的信息
+CLUSTER NODES 列出集群当前已知的所有节点（node），以及这些节点的相关信息。
+节点
+CLUSTER MEET <ip> <port> 将 ip 和 port 所指定的节点添加到集群当中，让它成为集群的一份子。
+CLUSTER FORGET <node_id> 从集群中移除 node_id 指定的节点。
+CLUSTER REPLICATE <node_id> 将当前节点设置为 node_id 指定的节点的从节点。
+CLUSTER SAVECONFIG 将节点的配置文件保存到硬盘里面。
+槽(slot)
+CLUSTER ADDSLOTS <slot> [slot ...] 将一个或多个槽（slot）指派（assign）给当前节点。
+CLUSTER DELSLOTS <slot> [slot ...] 移除一个或多个槽对当前节点的指派。
+CLUSTER FLUSHSLOTS 移除指派给当前节点的所有槽，让当前节点变成一个没有指派任何槽的节点。
+CLUSTER SETSLOT <slot> NODE <node_id> 将槽 slot 指派给 node_id 指定的节点，如果槽已经指派给另一个节点，那么先让另一个节点删除该槽>，然后再进行指派。
+CLUSTER SETSLOT <slot> MIGRATING <node_id> 将本节点的槽 slot 迁移到 node_id 指定的节点中。
+CLUSTER SETSLOT <slot> IMPORTING <node_id> 从 node_id 指定的节点中导入槽 slot 到本节点。
+CLUSTER SETSLOT <slot> STABLE 取消对槽 slot 的导入（import）或者迁移（migrate）。
+键
+CLUSTER KEYSLOT <key> 计算键 key 应该被放置在哪个槽上。
+CLUSTER COUNTKEYSINSLOT <slot> 返回槽 slot 目前包含的键值对数量。
+CLUSTER GETKEYSINSLOT <slot> <count> 返回 count 个 slot 槽中的键。
+
+```
+参考文章:
+http://www.redis.cn/topics/cluster-tutorial.html
+http://www.redis.cn/topics/cluster-spec.html
+http://redisdoc.com/topic/cluster-tutorial.html
+

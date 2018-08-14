@@ -1,0 +1,25 @@
+#!/usr/bin/expect
+if { $argc != 2 } {
+  send_user "usage: expect scp-expect.exp file host\n"
+  exit
+}
+#define var
+set file [lindex $argv 0]
+set host [lindex $argv 1]
+set password "623913"
+
+
+spawn scp -rpp $file $host
+set timeout 60
+expect {
+        "yes/no"    {send "yes\r";exp_continue}
+        "*password" {send "$password\r"}
+        timeout  {puts "expect connect timeout,pls contact lzy."; return}}
+expect eof
+
+
+
+
+
+
+

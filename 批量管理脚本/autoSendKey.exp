@@ -1,0 +1,10 @@
+#!/usr/bin/expect
+set file [lindex $argv 0]
+set host [lindex $argv 1]
+set password "123456"
+spawn ssh-copy-id -i  $file " $host"
+expect {
+	"yes/no" {send "yes\r"; exp_continue}
+	"*password" {send "$password\r"}
+}
+expect eof
