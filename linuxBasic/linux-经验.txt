@@ -1,0 +1,679 @@
+
+
+GPU
+
+GPU repo地址
+http://developer.download.nvidia.com/compute/cuda/repos/rhel7/x86_64/
+http://developer.download.nvidia.com/compute/cuda/repos/rhel7/x86_64/
+
+rpm -Uvh cuda-repo-rhel7-8.0.61-1.x86_64.rpm
+yum install cuda-8-0
+
+$ wget http://vault.centos.org/7.0.1406/updates/x86_64/Packages/kernel-devel-3.10.0-123.4.4.el7.x86_64.rpm
+$ wget http://vault.centos.org/7.0.1406/updates/x86_64/Packages/kernel-headers-3.10.0-123.4.4.el7.x86_64.rpm
+$ rpm -Uvh kernel-devel-3.10.0-123.4.4.el7.x86_64.rpm
+$ rpm -Uvh kernel-headers-3.10.0-123.4.4.el7.x86_64.rpm
+
+查看gpu版本
+
+nvidia-smi --query-gpu=gpu_name --format=csv,noheader --id=0
+
+来自 <https://docs.ucloud.cn/ai/gpu/operation/centos7_cuda> 
+
+
+redis cluster
+
+rsync -avz --exclude=dump.rdb  uar@10.10.32.27:~/  ./
+find . -name 'nodes.conf' -exec rm -f \;
+cd ~/redis-cluster/7000/
+~/redis-3.0.7/src/redis-server redis.config 
+cd ~/redis-cluster/7001/
+~/redis-3.0.7/src/redis-server redis.config 
+
+yum -y install ruby rubygems
+~/redis-3.0.7/src/redis-trib.rb add-node 10.10.32.57:7000 10.10.32.27:7001
+~/redis-3.0.7/src/redis-trib.rb add-node --slave 10.10.32.57:7001 10.10.32.27:7000
+
+分片
+./src/redis-trib.rb reshard --timeout 1600 reshard --from ea319d0160c5fa0ed7a41bd02aaa2b354ce014c1 ae0f4636cd4f27790081e26d7ec9d49e9d63710c e08c90d975fe92f2fbe57f6349247569fcd7b4cd --to 67d73dbe3ab8534583f71d433eb14e08cebf3051--slots 3000 10.10.32.27:7000
+
+来自 <http://10.18.62.66/xwiki/resources/js/xwiki/wysiwyg/xwe/F820A16BC8300FA5ECC0DBE1307BCAD2.cache.html> 
+
+linux登录很慢
+
+[root@yw-prd-kvm-06 log]# systemctl status -l dbus-org.freedesktop.login1.service
+● systemd-logind.service - Login Service
+   Loaded: loaded (/usr/lib/systemd/system/systemd-logind.service; static; vendor preset: disabled)
+   Active: active (running) since Fri 2017-07-28 18:06:43 CST; 4 days ago
+     Docs: man:systemd-logind.service(8)
+           man:logind.conf(5)
+           http://www.freedesktop.org/wiki/Software/systemd/logind
+           http://www.freedesktop.org/wiki/Software/systemd/multiseat
+ Main PID: 1027 (systemd-logind)
+   Status: "Processing requests..."
+   CGroup: /system.slice/systemd-logind.service
+           └─1027 /usr/lib/systemd/systemd-logind
+
+Aug 02 11:07:44 yw-prd-kvm-06 systemd[1]: Started Login Service.
+Aug 02 11:08:14 yw-prd-kvm-06 systemd[1]: Started Login Service.
+Aug 02 12:01:02 yw-prd-kvm-06 systemd[1]: Started Login Service.
+Aug 02 13:01:01 yw-prd-kvm-06 systemd[1]: Started Login Service.
+Aug 02 13:13:42 yw-prd-kvm-06 systemd[1]: Started Login Service.
+Aug 02 14:00:24 yw-prd-kvm-06 systemd[1]: Started Login Service.
+Aug 02 14:00:56 yw-prd-kvm-06 systemd[1]: Started Login Service.
+Aug 02 14:03:16 yw-prd-kvm-06 systemd[1]: Started Login Service.
+Aug 02 14:16:10 yw-prd-kvm-06 systemd[1]: Started Login Service.
+Aug 02 14:16:59 yw-prd-kvm-06 systemd[1]: Started Login Service.
+[root@yw-prd-kvm-06 log]# systemctl restart systemd-logind
+[root@yw-prd-kvm-06 log]# exit
+logout
+[ansible@yw-prd-kvm-06 ~]$ sudo su -
+Last login: Wed Aug  2 14:17:24 CST 2017 on pts/1
+[root@yw-prd-kvm-06 ~]# exit
+logout
+[ansible@yw-prd-kvm-06 ~]$ sudo su -
+Last login: Wed Aug  2 14:19:06 CST 2017 on pts/1
+[root@yw-prd-kvm-06 ~]# less /var/log/messages
+
+
+ssh proxy
+
+ ssh -i ansible-rsa1.id_rsa -L 2121:10.16.33.64:2222  ansible@10.10.32.19
+
+通过 跳板机 10.16.33.64 端口 2222 去连 10.10.32.19
+
+
+搭建ftp服务器,如果要开启转发，就把 Forwarding打开
+Subsystem       sftp    /usr/libexec/openssh/sftp-server
+Match Group devops
+ChrootDirectory /data/%u
+ForceCommand internal-sftp
+PermitTunnel yes
+AllowAgentForwarding yes
+AllowTcpForwarding yes
+X11Forwarding no
+GatewayPorts yes
+
+
+然后创建一个目录/data/{{user}}  user便是用户。属主必须是root.root  然后在里面创建一个目录，属主都是{{user}}
+
+分区大于2t的磁盘
+
+yum install xfsprogs xfsdump
+
+来自 <https://docs.oracle.com/cd/E37670_01/E37355/html/ol_install_xfs.html> 
+
+rpm命令总结
+
+# 查询未安装软件包的依赖关系
+rpm -qRp vim-common-6.3.046-2.el4.1.x86_64.rpm
+# 查询已安装软件包的依赖关系
+rpm -qR vim-common-6.3.046-2.el4.1
+－ivh：安装显示安装进度--install--verbose--hash
+－Uvh：升级软件包--Update；
+－qpl：列出RPM软件包内的文件信息[Query Package list]；
+－qpi：列出RPM软件包的描述信息[Query Package install package(s)]；
+－qf：查找指定文件属于哪个RPM软件包[Query File]；
+－Va：校验所有的RPM软件包，查找丢失的文件[View Lost]；
+－e：删除包
+
+
+rpm -q samba //查询程序是否安装
+
+rpm -ivh  /media/cdrom/RedHat/RPMS/samba-3.0.10-1.4E.i386.rpm //按路径安装并显示进度
+rpm -ivh --relocate /=/opt/gaim gaim-1.3.0-1.fc4.i386.rpm    //指定安装目录
+
+rpm -ivh --test gaim-1.3.0-1.fc4.i386.rpm　　　 //用来检查依赖关系；并不是真正的安装；
+rpm -Uvh --oldpackage gaim-1.3.0-1.fc4.i386.rpm //新版本降级为旧版本
+
+rpm -qa | grep httpd　　　　　 ＃[搜索指定rpm包是否安装]--all搜索*httpd*
+rpm -ql httpd　　　　　　　　　＃[搜索rpm包]--list所有文件安装目录
+
+rpm -qpi Linux-1.4-6.i368.rpm　＃[查看rpm包]--query--package--install package信息
+rpm -qpf Linux-1.4-6.i368.rpm　＃[查看rpm包]--file
+rpm -qpR file.rpm　　　　　　　＃[查看包]依赖关系
+rpm2cpio file.rpm |cpio -div    ＃[抽出文件]
+
+rpm -ivh file.rpm 　＃[安装新的rpm]--install--verbose--hash
+rpm -ivh
+
+rpm -Uvh file.rpm    ＃[升级一个rpm]--upgrade
+rpm -e file.rpm      ＃[删除一个rpm包]--erase
+
+来自 <http://www.cnblogs.com/xiaochaohuashengmi/archive/2011/10/08/2203153.html> 
+
+
+
+yum install -y wireshark 网络抓包
+
+
+getfacl
+
+[yulei@centos7 /opt]$ ll test.sh
+-rw-rw----+ 1 root root 5 Jun  8 14:34 test.sh
+
+
+当你发现9位权限后还有一个+号，这是什么原因呢，原来linux系统也有acl权限控制的。使用setfacl来设置，使用getfacl来查看。
+[yulei@centos7 /opt]$ getfacl test.sh
+# file: test.sh
+# owner: root
+# group: root
+user::rw-
+user:yulei:rw-
+group::---
+group:yulei:rw-
+mask::rw-
+other::---
+
+
+话说应该怎么来设置呢，来我教你
+
+
+[root@centos7 /opt]# touch test.sh
+[root@centos7 /opt]# ll test.sh
+-rw-r--r-- 1 root root 0 Jun  8 14:54 test.sh
+[root@centos7 /opt]# setfacl -m user:yulei:rw- ./test.sh
+[root@centos7 /opt]# ll test.sh
+-rw-rw-r--+ 1 root root 0 Jun  8 14:54 test.sh
+[root@centos7 /opt]# getfacl test.sh
+# file: test.sh
+# owner: root
+# group: root
+user::rw-
+user:yulei:rw-
+group::r--
+mask::rw-
+other::r--
+
+[root@centos7 /opt]# setfacl -m group:yulei:rw- ./test.sh    
+[root@centos7 /opt]# getfacl test.sh                     
+# file: test.sh
+# owner: root
+# group: root
+user::rw-
+user:yulei:rw-
+group::r--
+group:yulei:rw-
+mask::rw-
+other::r--
+
+OK，搞定。
+
+
+find 查找
+
+查找当前目录
+1. find -L -type l
+复制代码
+查找指定目录
+1. find -L ur_path -type l
+复制代码
+删除
+1. find -L ur_path -type l -delete
+复制代码
+
+
+ssserver
+
+[root@localhost ~]#  pip install shadowsocks
+
+[root@localhost ~]# cat config.json 
+{
+    "server":"45.62.97.148",
+    "server_port":8888,
+    "local_address":"127.0.0.1",
+    "local_port":1080,
+    "password":"g7fknptVYOTTLg",
+    "timeout":300,
+    "method":"aes-256-cfb",
+    "fast_open":false,
+    "workers":1
+}
+[root@localhost ~]# sslocal -c config.json 
+
+
+Chrom 
+
+[sandow@localhost ~]# chromium-browser --proxy-server=socks5://127.0.0.1:1080
+
+Firefox
+
+Install add-ons "FoxyProxy" 
+
+
+SSServer
+
+[root@localhost ~]# cat /etc/shadowsocks.json 
+{
+    "server": "23.106.133.48",
+    "port_password": {
+        "8887": "NMHBNzEDyQTFgg",
+        "8888": "g7fknptVYOTTLg",
+        "8889": "g7fknp"
+    },
+    "timeout":300,
+    "method":"aes-256-cfb",
+    "fast_open": false
+}
+
+ssserver -c /etc/shadowsocks.json -d start 
+ssserver -c /etc/shadowsocks.json -d stop 
+
+rsync
+
+/usr/bin/rsync -auvrtzopgP --progress  
+
+
+GPG key
+
+We need to generate a lot of random bytes. It is a good idea to perform
+some other action (type on the keyboard, move the mouse, utilize the
+disks) during the prime generation; this gives the random number
+generator a better chance to gain enough entropy.
+
+
+
+gpg: checking the trustdb
+gpg: 3 marginal(s) needed, 1 complete(s) needed, PGP trust model
+gpg: depth: 0  valid:   1  signed:   0  trust: 0-, 0q, 0n, 0m, 0f, 1u
+pub   2048R/08273F08 2017-04-07
+      Key fingerprint = FB70 486A D77A D07E D9E2  D14A BE3D FDE5 0827 3F08
+uid                  sandow (key for private rpm repository) <j.k.yulei@gmail.com>
+sub   2048R/9C00F055 2017-04-07
+
+
+[root@manager ~]# gpg --list-keys
+/root/.gnupg/pubring.gpg
+------------------------
+pub   2048R/08273F08 2017-04-07
+uid                  sandow (key for private rpm repository) <j.k.yulei@gmail.com>
+sub   2048R/9C00F055 2017-04-07
+
+
+
+If you want to distribute RPMs to multiple machines that use yum (e.g. Red Hat / CentOS, Fedora) it is easier to create your own yum repository and populate it with packages. You can include any rpm you want provided that the package license allows distribution (I initially wanted to include jre in this guide, but I wasn’t sure whether Oracle allowed its (re)distribution so I chose LibreOffice instead).
+This guide shows how to create a custom yum repo on CentOS 6, but it should work fairly similar on other yum based Linux distros. As said above I only included the LibreOffice suite which consists of 51 packages, I’ll call this repo office and its root folder will be /opt/office. Most operations will be performed as linuxsysconfig which is a user account defined with sudo privileges.
+ 
+Create the repo path
+ 
+sudo mkdir -p -m 775 /opt/office
+sudo chown -R linuxsysconfig /opt/office
+ 
+Add packages
+ 
+Assuming you downloaded the LibreOffice tarball in ~/Downloads:
+cd ~/Downloads
+tar zxvf LibreOffice_4.0.2_Linux_x86-64_rpm.tar.gz
+find ./LibreOffice_4.0.2.2_Linux_x86-64_rpm/ -maxdepth 2 -name "*.rpm" -exec cp {} /opt/office \;
+rm -f LibreOffice_4.0.2_Linux_x86-64_rpm.tar.gz
+At this point all required RPMs are copied to the root path. Now the repository is almost ready, but first there’s one more important step:
+ 
+GPG-sign the RPMs
+ 
+	• create ~/.gnupg if it doesn’t exist (my CentOS 6.4 installation doesn’t automatically create this folder for all users)
+[[ -d ~/.gnupg ]] || mkdir -p -m 700 ~/.gnupg
+ 
+	• start the gpg-agent daemon which is needed by gpg2 (RHEL6 no longer supports gpg1)
+gpg-agent --daemon --use-standard-socket --pinentry-program /usr/bin/pinentry-curses
+Note: you can replace pinentry-curses with pinentry-gtk if you prefer GUIs but that will require pinentry-gtk to be installed.
+ 
+	• generate a GPG key (you can use the defaults, select a name and an email address)
+gpg --gen-key
+ 
+	• [optional] confirm the GPG key was created successfully
+gpg --list-keys
+That should return the key details e.g.
+pub   2048R/519BAE20 2013-04-25
+uid                  linuxsysconfig <contact@localhost>
+sub   2048R/103A8066 2013-04-25
+ 
+	• export the key
+gpg --export -a linuxsysconfig > RPM-GPG-KEY-linuxsysconfig
+ 
+	• copy the key to the default path
+sudo cp RPM-GPG-KEY-linuxsysconfig /etc/pki/rpm-gpg/
+ 
+	• import the key into the RPM database
+sudo rpm --import RPM-GPG-KEY-linuxsysconfig
+ 
+	• [optional] confirm the key was successfully imported
+rpm -q gpg-pubkey --qf '%{NAME}-%{VERSION}-%{RELEASE}\t%{SUMMARY}\n'
+This should return your key details alongside with other  keys e.g.:
+gpg-pubkey-c105b9de-4e0fd3a3    gpg(CentOS-6 Key (CentOS 6 Official Signing Key) <centos-6-key@centos.org>)
+gpg-pubkey-00f97f56-467e318a    gpg(Remi Collet <RPMS@FamilleCollet.com>)
+gpg-pubkey-0608b895-4bd22942    gpg(EPEL (6) <epel@fedoraproject.org>)
+gpg-pubkey-6b8d79e6-3f49313d    gpg(Dag Wieers (Dag Apt Repository v1.0) <dag@wieers.com>)
+gpg-pubkey-41a40948-4ce19266    gpg(PUIAS Linux Distribution (RPM Integrity Signature) <puias@math.princeton.edu>)
+gpg-pubkey-519bae20-517946ed    gpg(linuxsysconfig <contact@localhost>)
+ 
+Add the GPG signing details to your rpm environment
+echo "%_signature gpg" > ~/.rpmmacros
+echo "%_gpg_name linuxsysconfig" >> ~/.rpmmacros
+ Now the user linuxsysconfig is configured to sign RPMs with the GPG key
+cd /opt/office
+rpm --resign *.rpm
+If everything goes well (and it should) all packages will be successfully signed. You can confirm that with randomly querying the packages or do a block query to return the singature line for each:
+rpm -qpi *.rpm | awk '/Signature/'
+ 
+Finally create the repository
+ 
+	• generate repository configuration
+sudo yum install createrepo
+cd /opt/office
+createrepo .
+ 
+Local repo
+cat /etc/yum.repos.d/office.repo
+[office]
+name=Libre Office repository
+baseurl=file:///opt/office/
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-linuxsysconfig
+enabled=1
+ 
+FTP repo
+ 
+	• copy /opt/office to the FTP path (e.g. /var/ftp/)
+	• copy the RPM GPG key from /etc/pki/rpm-gpg/RPM-GPG-KEY-linuxsysconfig to the remote FTP path (e.g. /var/ftp/office)
+	• create the repository file (e.g. office-ftp.repo)
+cat /etc/yum.repos.d/office-ftp.repo
+[office-ftp]
+name=Libre Office FTP repository
+baseurl=ftp://192.168.0.100/office/
+gpgcheck=1
+gpgkey=ftp://192.168.0.100/office/RPM-GPG-KEY-linuxsysconfig
+enabled=1
+Running sudo yum repolist should return the 2 new repositories. You can modify them at your will (to add or delete packages), but remember to re-run the createrepo command to save the changes.
+Related Posts:
+	• Inplace migration from Oracle Linux 7 to CentOS 7
+	• CentOS 7 with Oracle UEK
+	• Upgrade to CentOS 7
+	• How to install Steam on CentOS 7
+	• Inplace upgrade from OL6.5 to OL7
+          
+ 
+ 
+
+来自 <http://linuxsysconfig.com/2013/04/create-a-yum-repository-with-custom-gpg-signed-packages/> 
+
+
+
+
+openssl 生成签名证书
+
+使用 OpenSSL 生成自签名证书
+OpenSSL 是 SSL 和 TLS 协议的开放式源代码实现。它在标准通信层上提供了加密传输层，允许其与诸多网络应用程序和服务相结合。Cloud Management Console 中的缺省 SSL 概要文件具有通用公共名称。将 SSL 概要文件关联至网关集群时，如果使用缺省 SSL 概要文件，那么发出 API 调用的应用程序可能无法根据提供的证书验证其所连接到的主机名。在这种情况下，您可以生成一个新的自签名证书， 以表示应用程序可以验证的公共名称。该主题告诉您如何使用 OpenSSL 工具箱生成自签名 SSL 证书，以启用 HTTPS 连接。
+过程
+要使用 OpenSSL 生成自签名 SSL 证书，请完成以下步骤：
+1. 写下您的 SSL 证书的公共名称 (CN)。 该公共名称 (CN) 是使用该证书的系统的标准名称。 如果您使用的是动态 DNS，那么 CN 应该具有通配符，例如：*.api.com. 否则，使用网关集群中设置的主机名或 IP 地址（例如，192.16.183.131 或 dp1.acme.com）。
+2. 运行以下 OpenSSL 命令来生成您的专用密钥和公用证书。回答问题并在出现提示时输入公共名称。
+openssl req -newkey rsa:2048 -nodes -keyout key.pem -x509 -days 365 -out certificate.pem
+3. 检查已创建的证书：
+openssl x509 -text -noout -in certificate.pem
+4. 将密钥和证书组合在 PKCS#12 (P12) 捆绑软件中：
+ openssl pkcs12 -inkey key.pem -in certificate.pem -export -out certificate.p12
+5. 验证您的 P12 文件。
+openssl pkcs12 -in certificate.p12 -noout -info
+
+
+
+centos wifi connect
+
+/usr/lib/systemd/system/wpa_supplicant.service
+
+[Unit]
+Description=WPA Supplicant daemon
+Before=network.target
+After=syslog.target
+
+[Service]
+Type=dbus
+BusName=fi.w1.wpa_supplicant1
+EnvironmentFile=-/etc/sysconfig/wpa_supplicant
+ExecStart=/usr/sbin/wpa_supplicant -u -f /var/log/wpa_supplicant.log -c /etc/wpa_supplicant/wpa_supplicant.conf $INTERFACES $DRIVERS $OTHER_ARGS
+ExecStartPost=/sbin/ifdown wlan0
+ExecStartPost=/sbin/ifup wlan0
+
+
+[Install]
+WantedBy=multi-user.target
+
+
+/etc/sysconfig/network-scripts/ifcfg-TP-LINK_95E1
+
+HWADDR=8C:70:5A:99:10:AC
+ESSID="TP-LINK_95E1"
+MODE=Managed
+KEY_MGMT=WPA-PSK
+TYPE=Wireless
+BOOTPROTO=static
+IPADDR=192.168.0.201
+NETMASK=255.255.255.0
+GATEWAY=192.168.0.1
+DEFROUTE=yes
+IPV4_FAILURE_FATAL=no
+IPV6INIT=no
+IPV6_AUTOCONF=yes
+IPV6_DEFROUTE=yes
+IPV6_FAILURE_FATAL=no
+NAME=TP-LINK_95E1
+UUID=1ca8d5af-24df-4078-9c27-e4d13528bada
+ONBOOT=no
+SECURITYMODE=open
+PEERDNS=yes
+PEERROUTES=yes
+ssid="TP-LINK_95E1"
+psk=2c4ca5a52822cf8a490fc9914cd8ea0d43048c5882e5e2e24ee055e0c73d3b80
+
+
+/etc/sysconfig/wpa_supplicant
+
+# Use the flag "-i" before each of your interfaces, like so:
+#  INTERFACES="-ieth1 -iwlan0"
+INTERFACES="-iwlan0"
+
+# Use the flag "-D" before each driver, like so:
+#  DRIVERS="-Dwext"
+DRIVERS=""
+
+# Other arguments
+#   -u   Enable the D-Bus interface (required for use with NetworkManager)
+#   -f   Log to /var/log/wpa_supplicant.log
+#   -P   Write pid file to /var/run/wpa_supplicant.pid
+#        required to return proper codes by init scripts (e.g. double "start" action)
+#        -B to daemonize that has to be used together with -P is already in wpa_supplicant.init.d
+OTHER_ARGS="-P /var/run/wpa_supplicant.pid"
+
+
+wpa_passphrase "TP-LINK_95E1" zhiru601 > /etc/wpa_supplicant/wpa_supplicant.conf
+/etc/wpa_supplicant/wpa_supplicant.conf
+
+ctrl_interface=/var/run/wpa_supplicant
+ctrl_interface_group=wheel
+
+network={
+        key_mgmt=WPA-PSK
+        ssid="TP-LINK_95E1"
+        #psk="zhiru601"
+        psk=2c4ca5a52822cf8a490fc9914cd8ea0d43048c5882e5e2e24ee055e0c73d3b80
+}
+
+centos x11
+
+点击 Tab，打开 kernel 启动选项，增加 net.ifnames=0 biosdevname=0 
+
+[root@linux-node1 ~]# rpm -ivh http://mirrors.aliyun.com/epel/epel-release-latest-7.noarch.rpm
+[root@linux-node1 ~]# yum install -y net-tools vim lrzsz tree screen lsof tcpdump 
+
+关闭 NetworkManager 和防火墙
+
+[root@linux-node1 ~]# systemctl disable firewalld
+[root@linux-node1 ~]# systemctl disable NetworkManager
+
+关闭并确认 SELinux 处于关闭状态
+
+[root@linux-node1 ~]# vim /etc/sysconfig/selinux
+SELINUX=disabled #修改为 disable
+
+更新系统并重启
+[root@linux-node1 ~]# yum update -y && reboot 
+
+yum -y groups install "GNOME Desktop"
+
+echo "exec gnome-session" >> ~/.xinitrc
+
+systemctl set-default graphical.target
+
+
+Runlevel    Target Units                          Description
+0           runlevel0.target, poweroff.target     Shut down and power off the system.
+1           runlevel1.target, rescue.target       Set up a rescue shell.
+2           runlevel2.target, multi-user.target   Set up a non-graphical multi-user system.
+3           runlevel3.target, multi-user.target   Set up a non-graphical multi-user system.
+4           runlevel4.target, multi-user.target   Set up a non-graphical multi-user system.
+5           runlevel5.target, graphical.target    Set up a graphical multi-user system.
+6           runlevel6.target, reboot.target       Shut down and reboot the system.
+
+
+
+
+openladp
+
+	2. Delete objects wholesale from:  ou=sales, dc=linuxcbt, dc=internal  - via STDIN
+		Note: Delete using the DN of an object
+	3. Delete non-existing and existing items
+		Note: Default behavior of LDAP online tools is to abort at the step that fails
+		Ldapdelete -D "cn=Manager,dc=linuxcbt,dc=internal" -W -h linuxcbtsuse2 -v "cn=LinuxCBT2,ou=sales, dc=linuxcbt,dc=internal" -x -c
+		Note: '-c' option continues enen if errors are encounterred
+	4. Delete remaining Ous and objects via file
+		a. Ldapdelete -D "cn=Manager,dc=linuxcbt,dc=internal" -W -h linuxcbtsuse2 -v  "ou=people,dc=linuxcbt,dc=internal" -x
+		b. Ldapdelete -D "cn=Manager,dc=linuxcbt,dc=internal" -W -h linuxcbtsuse2 -v  "cn=LinuxCBT5,ou=sales,dc=linuxcbt,dc=internal" -x -c -f Delete_Remaining_Items.ldif
+
+
+###LADP
+Features:
+	1. Functionality found in:
+		a. Ldapadd
+		b. Ldapdelete
+		c. Ldapmodify
+	2.  Manipulates objects in DIT
+
+ldapsearch -x -b 'dc=linuxcbt,dc=internal' "(objectclass=*" -h linuxcbtsuse2
+
+tasks:
+	1. rebuild the DIT - create top-level OUs and users/OUs
+		a. ldapmodify -D 'cn=Manager,dc=linuxcbt,dc=internal' -x -W -a -v -f ADD_3OUs.ldif
+		b. ldapmodify -D 'cn=Manager,dc=linuxcbt,dc=internal' -x -W -a -v -f file_name -h hostname
+		
+		
+
+yun仓库
+
+今天老大要求，搭建yum仓库，但公司环境中centos系统不仅有6.6还有7.总不能把RPM包都放同一个目录吧，后来想想repo配置的时候可以传参数，那就好办多了。搞起来。
+一、 首先安装软件
+	yum install createrepo  nginx
+	Nginx, apache那都不重要，
+二、 创建目录
+	mkdir /yum/centos/pdmi_base/7/x86_64/ -p
+	mkdir /yum/centos/pdmi_base/6/x86_64/ -p
+三、 把centos6.6安装包里的RPM都copy过来
+	mount -o loop CentOS-6.6-x86_64-bin-DVD1.iso /mnt
+	rsync -auvrtzopgP --progress /mnt/Packages/  /yum/centos/pdmi_base/6/x86_64/
+	
+	这里不使用 cp的原因是因为里面rpm包太多，cp参数过多而失败
+四、 创建yum源索引,
+	createrepo  -pdo /yum/centos/pdmi_base/7/x86_64/
+	createrepo -pdo /yum/centos/pdmi_base/6/x86_64/
+	
+	以后如果需要更新，使用下面命令更新
+	createrepo --update /yum/centos/pdmi_base/7/x86_64/
+
+五、 配置nginx
+	增加文件 /etc/nginx/conf.d/yumrepo.conf 并添加下面内容
+	server {
+	    listen 80;
+	    root /yum/centos/;
+	    server_name 172.17.1.209,172.18.1.209;
+	    location / {
+	    autoindex on;
+	    autoindex_exact_size off;
+	    autoindex_localtime on;
+	
+	    }
+	}
+
+	启动 systemctl start nginx
+	
+六、 在别的机子上增加repo源
+	创建文件 /etc/yum.repos.d/PDMI-Base.repo  并添加下面内容
+	
+	[PDMI_Base]
+	name=PDMI_Base
+	baseurl=http://172.17.1.209/pdmi_base/$releasever/$basearch
+	        http://172.18.1.209/pdmi_base/$releasever/$basearch
+	enabled=1
+	gpgcheck=0
+	
+	然后便可以安装软件了
+	yum install nginx --enablerepo=PDMI_Base --disablerepo=base,update
+	
+	
+	
+	
+	
+	
+yw-dns-01
+
+mkdir /mnt/1 /mnt/2
+mount -o loop /data/iso/CentOS-6.6-x86_64-bin-DVD1.iso  /mnt/1/
+mount -o loop /data/iso/CentOS-6.6-x86_64-bin-DVD2.iso  /mnt/2/
+
+cd pdmi-centos-extras/6/x86_64/
+cp -r /mnt/2/Packages  ./
+createrepo  --update .
+
+
+cd pdmi-centos-base/6/x86_64/
+cp -r /mnt/1/Packages ./
+cp -r /mnt/1/repodata ./
+
+
+wget -O /etc/yum.repos.d/epel.repo http://mirrors.aliyun.com/repo/epel-6.repo
+cd pdmi-centos-epel/6/x86_64/
+nohup reposync --repoid=epel &
+createrepo  --update .
+
+来自 <http://10.100.13.43/xwiki/resources/js/xwiki/wysiwyg/xwe/F820A16BC8300FA5ECC0DBE1307BCAD2.cache.html> 
+
+
+ios挂载ntfs
+
+今天刚搭建好了yum源，但是没有rpm包呀，于是把centos iso镜像文件放上去了。
+iso文件不需要解压只需要挂载到目录就好，这比软碟通好用多了。
+
+mout -o loog Centos-6.6-DVD1.iso /mnt
+
+OK就可以查看其中内容了。
+
+以后自动化安装系统，cobbler,kickstart都会用到。
+
+Yum install ntfs-3g  来支持ntfs磁盘
+
+centos 安装字体
+
+首先需要查看是否安装了fontconfig没有的需要安装
+yum install fontconfig
+
+
+f you want to install font for current user, you need to make .fonts directory in your own home directory ~. For example mkdir ~/.fonts .
+If you want to install fonts and be accessible by all users, you have to copy your standard fonts into /usr/share/fonts directory.
+
+来自 <http://stackoverflow.com/questions/36271358/how-to-install-fonts-on-centos7-2-fc-cache-command-is-not-recognized> 
+
+fc-cache -f -v 然后执行这个就安装好啦
+
+iostat 在sysstat
+
+
+
+

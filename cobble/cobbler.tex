@@ -13,7 +13,7 @@ DHCP（Dynamic Host Configuration Protocol，动态主机配置协议）通常�
 
  TFTP（Trivial File Transfer Protocol,简单文件传输协议）是TCP/IP协议族中的一个用来在客户机与服务器之间进行简单文件传输的协议，提供不复杂、开销不大的文件传输服务。端口号为69。
 
-\ref{Fig:pxe-step}￼
+\ref{Fig:pxe-step}
 
 \begin{enumerate}
 \item PXE客户端(需要安装系统的机子) 通过PXE BOOTROM（自启动芯片）会以UDP发送一个广播，向本网络中的DHCP服务器索取IP
@@ -32,8 +32,8 @@ DHCP（Dynamic Host Configuration Protocol，动态主机配置协议）通常�
 \lstinputlisting{./cobble/codes/installDhcp.sh}
 
 好吧让我们来看看效果如果出现下面画面证明配置成功啦
-￼
-\ref{Fig:kickstartDhcp}￼
+
+\ref{Fig:kickstartDhcp}
 
 配置支持PXE的启动程序 syslinux
 syslinux是一个功能强大的引导加载程序，而且兼容各种介质。SYSLINUX是一个小型的Linux操作系统，它的目的是简化首次安装Linux的时间，并建立修护或其它特殊用途的启动盘。如果没有找到pxelinux.0这个文件,可以安装一下。

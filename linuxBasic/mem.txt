@@ -1,0 +1,197 @@
+
+
+Mem	物理内存统计
+-/+ buffers/cache	物理内在的缓存统计
+SWAP	磁盘上交换分区的使用情况
+
+total	物理内存总量
+used	分配给缓存（buffers cache）的数量，其中可能部分缓存并未实际使用
+free	未被分配的内存
+shared	共享内存，一般系统不会用到
+buffers	系统分配但未被使用的buffers数量
+cached	系统分配但未被使用的cache数量
+
+系统当前实际可用内存 = buffers + cached + free
+buffer 与cache 的区别
+
+A buffer is something that has yet to be “written” to disk.
+A cache is something that has been “read” from the disk and stored for later use.
+
+
+
+
+
+
+查看linux系统中空闲内存/物理内存使用/剩余内存
+
+
+查看系统内存有很多方法，但主要的是用top命令和free 命令
+当执行top命令看到结果，要怎么看呢？这里说明一下：
+Mem: 666666k total, 55555k used,并不是代表你的应用程序已经使用了55555k的内存,这55555k是包含了:应用程序内存 + 缓冲 + 缓存的内存的。
+用free命令查看更直接：
+下面是一个例子(单位是MB): 
+[root@linuxzgf ~]# free -m
+                    total       used       free     shared    buffers     cached
+Mem:          7982       6811       1171          0        350       5114
+-/+ buffers/cache:       1346       6636
+Swap:        16935         11      16924
+
+
+在这里例子中,应用程序只使用了1346MB内存,还有6636MB空闲内存可以使用. 
+一些简单的计算方法： 
+物理已用内存 = 实际已用内存 - 缓冲 - 缓存 = 6811M - 350M - 5114M
+
+
+物理空闲内存 = 总物理内存 - 实际已用内存 + 缓冲 + 缓存 
+
+
+应用程序可用空闲内存 = 总物理内存 - 实际已用内存 
+
+
+应用程序已用内存 = 实际已用内存 - 缓冲 - 缓存
+
+
+top命令的结果详解
+top命令 是Linux下常用的性能 分析工具 ，能够实时显示系统 中各个进程的资源占用状况，类似于Windows的任务管理 器。下面详细介绍它的使用方法。
+
+
+top - 02:53:32 up 16 days,  6:34, 17 users,  load average: 0.24, 0.21, 0.24
+Tasks: 481 total,   3 running, 474 sleeping,   0 stopped,   4 zombie
+Cpu(s): 10.3%us,  1.8%sy,  0.0%ni, 86.6%id,  0.5%wa,  0.2%hi,  0.6%si,  0.0%st
+Mem:   4042764k total,  4001096k used,    41668k free,   383536k buffers
+Swap:  2104472k total,     7900k used,  2096572k free,  1557040k cached
+
+
+  PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
+32497 jacky     20   0  669m 222m  31m R   10  5.6       29:27.62 firefox
+ 4788 yiuwing   20   0  257m  18m  13m S    5  0.5          5:42.44 konsole
+ 5657 Liuxiaof  20   0  585m 159m  30m S    4  4.0          5:25.06 firefox
+ 4455 xiefc      20   0  542m  124m  30m R    4  3.1         7:23.03 firefox
+ 6188 Liuxiaof  20   0  191m   17m  13m S    4  0.5          0:01.16 konsole
+ 
+
+
+
+
+统计信息区前五行是系统整体的统计信息。第一行是任务队列信息，同 uptime  命令的执行结果。其内容如下：
+
+
+01:06:48  当前时间  
+up 1:22  系统运行 时间，格式为时:分  
+1 user  当前登录用户 数  
+load average: 0.06, 0.60, 0.48  系统负载 ，即任务队列的平均长度。
+            三个数值分别为  1分钟、5分钟、15分钟前到现在的平均值。 
+
+
+
+
+第二、三行为进程和CPU的信息。当有多个CPU时，这些内容可能会超过两行。内容如下：
+
+
+Tasks: 29 total  进程总数  
+1 running  正在运行的进程数  
+28 sleeping  睡眠的进程数  
+0 stopped  停止的进程数  
+0 zombie  僵尸进程数  
+Cpu(s): 0.3% us  用户空间占用CPU百分比  
+1.0% sy  内核 空间占用CPU百分比  
+0.0% ni  用户进程空间内改变过优先级的进程占用CPU百分比  
+98.7% id  空闲CPU百分比  
+0.0% wa  等待输入输出的CPU时间百分比  
+0.0% hi     
+0.0% si    
+
+
+
+
+最后两行为内存 信息。内容如下：
+
+
+Mem: 191272k total  物理内存总量  
+173656k used  使用的物理内存总量  
+17616k free  空闲内存总量  
+22052k buffers  用作内核缓存 的内存量  
+Swap: 192772k total  交换区总量  
+0k used  使用的交换区总量  
+192772k free  空闲交换区总量  
+123988k cached  缓冲的交换区总量。
+            内存中的内容被换出到交换区，而后又被换入到内存，但使用过的交换区尚未被覆盖，
+            该数值即为这些内容已存在于内存中 的交换区的大小。
+            相应的内存再次被换出时可不必再对交换区写入。 
+
+
+
+
+进程信息区统计信息区域的下方显示了各个进程的详细信息。首先来认识一下各列的含义。
+
+
+序号  列名  含义  
+a  PID  进程id  
+b  PPID  父进程id  
+c  RUSER  Real user name  
+d  UID  进程所有者的用户id  
+e  USER  进程所有者的用户名  
+f  GROUP  进程所有者的组名  
+g  TTY  启动进程的终端名。不是从终端启动的进程则显示为 ?  
+h  PR  优先级  
+i  NI  nice值。负值表示高优先级，正值表示低优先级  
+j  P  最后使用的CPU，仅在多CPU环境 下有意义  
+k  %CPU  上次更新到现在的CPU时间占用百分比  
+l  TIME  进程使用的CPU时间总计，单位秒  
+m  TIME+  进程使用的CPU时间总计，单位1/100秒  
+n  %MEM  进程使用的物理内存 百分比  
+o  VIRT  进程使用的虚拟内存总量，单位kb。VIRT=SWAP+RES  
+p  SWAP  进程使用的虚拟内存中，被换出的大小，单位kb。  
+q  RES  进程使用的、未被换出的物理内存大小，单位kb。RES=CODE+DATA  
+r  CODE  可执行代码占用的物理 内存大小，单位kb  
+s  DATA  可执行代码以外的部分(数据 段+栈)占用的物理 内存大小，单位kb  
+t  SHR  共享内存大小，单位kb  
+u  nFLT  页面错误次数  
+v  nDRT  最后一次写入到现在，被修改过的页面数。  
+w  S  进程状态。
+            D =不可中断的睡眠状态
+            R =运行
+            S =睡眠
+            T =跟踪/停止
+            Z =僵尸进程  
+x  COMMAND  命令名/命令行  
+y  WCHAN  若该进程在睡眠，则显示睡眠中的系统函数名  
+z  Flags  任务标志，参考 sched.h 
+
+
+
+
+默认情况下仅显示比较重要的  PID、USER、PR、NI、VIRT、RES、SHR、S、%CPU、%MEM、TIME+、COMMAND  列。可以通过下面的快捷键来更改显示内容。
+更改显示内容通过 f 键可以选择显示的内容。按 f 键之后会显示列的列表，按 a-z  即可显示或隐藏对应的列，最后按回车键确定。
+按 o 键可以改变列的显示顺序。按小写的 a-z 可以将相应的列向右移动，而大写的 A-Z  可以将相应的列向左移动。最后按回车键确定。
+按大写的 F 或 O 键，然后按 a-z 可以将进程按照相应的列进行排序。而大写的  R 键可以将当前的排序倒转。
+top命令使用过程中，还可以使用一些交互的命令来完成其它参数的功能。这些命令是通过快捷键启动的。
+＜空格＞：立刻刷新。
+P：根据CPU使用大小进行排序。
+T：根据时间、累计时间排序。
+q：退出top命令。
+m：切换显示内存信息。
+t：切换显示进程和CPU状态信息。
+c：切换显示命令名称和完整命令行。
+M：根据使用内存大小进行排序。
+W：将当前设置写入~/.toprc文件中。这是写top配置文件的推荐方法。
+可以看到，top命令是一个功能十分强大的监控系统的工具，对于系统管理员而言尤其重要。但是，它的缺点是会消耗很多系统资源。
+
+
+
+
+居然查看了内存，以下指令也会用到：
+查看CPU个数
+# cat /proc/cpuinfo | grep "physical id" | uniq | wc -l
+查看CPU核数
+# cat /proc/cpuinfo | grep "cpu cores" | uniq
+查看CPU型号
+# cat /proc/cpuinfo | grep 'model name' |uniq
+那么，该服务器有2个4核CPU，型号Intel(R) Xeon(R) CPU E5630 @ 2.53GHz
+
+
+占用内存的测量
+测量一个进程占用了多少内存，linux为我们提供了一个很方便的方法，/proc目录为我们提供了所有的信息，实际上top等工具也通过这里来获取相应的信息。
+/proc/meminfo 机器的内存使用信息
+/proc/pid/maps pid为进程号，显示当前进程所占用的虚拟地址。
+/proc/pid/statm 进程所占用的内存

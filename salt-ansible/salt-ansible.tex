@@ -27,29 +27,11 @@ var files
 \subsection{salt介绍}
 与ansible不同的是，salt是一个C/S架构的软件，salt管理端为master,客户端叫minion，通过server端下发指令，客户端受指令的方式进行操作，saltstack基于zeromq消息队列来管理成千上万台主机客户端，传输指令执行相关操作。采用RSA key方式进行身份确认，传输采用AES方式进行加密，这使得它的安全性得到了保证。
 
-在每个minion启动后便会自动生成RSA公密钥，存入于/etc/salt/pki/minion，中，根据minion配置文件中master地址，主动发送公钥给master等待master接收,master接收后便可以批量管理主机。下面是salt依赖的模块。
-
-\begin{itemize}
-\item msgpack-python, saltstack 消息交换库
-\item YAML saltstack配置解析定义语法
-\item Jinja2 saltstack 配置模板
-\item MarkupSafe python unicode 转换库
-\item apache-libcloud saltstack对去架构编排库
-\item requests HTTP python 库
-\item ZeroMQ saltstack消息系统
-\item pyzqm zeromq python库
-\item pycrypto python 密码库
-\item m2crypto openssl python包装库
-\end{itemize}
+在每个minion启动后便会自动生成RSA公密钥，存入于/etc/salt/pki/minion，中，根据minion配置文件中master地址，主动发送公钥给master等待master接收,master接收后便可以批量管理主机。
 
 \subsection{salt中grains与pillar}
 
-\subsubsection{Grains}
-
-Grains 是saltstack组件之一，记录saltstack Minion 的一些静态信息的组件，(CPU, 内存, 磁盘, 网络, 等) 可以通过grains.items查看某台minion的所有Grain信息，minion的grains信息会在minions启动时汇报给master,在实际应用环境中我们需要根据自己的业务需求去算定义grains
-
-
-查看grains函数 salt -E 'client*' sys.list_functions grains
+Grains 是saltstack组件之一，记录saltstack Minion 的一些静态信息的组件，(CPU, 内存, 磁盘, 网络, 等) 可以通过grains.items查看某台minion的所有Grain信息，minion的grains信息会在minions启动时汇报给master,在实际应用环境中我们需要根据自己的业务需求去算定义grains,在每次修改完grains后需要同步更新grains.  salt '*' saltutil.sync_grains。 了解更多关于grains函数使用命令查看 salt -E 'client*' sys.list_functions grains
 
 自定义grians有三种方法： 
 第一种在/etc/salt/master里直接配置，
@@ -98,44 +80,21 @@ if __name__ == "__main__":
     print roles()
 \end{lstlisting}
 
-三种方法优先级为从高到低依次为系统自带，grains文件配置，master grains. 在每次修改完grains后需要同步更新grains.  salt '*' saltutil.sync_grains
-
+三种方法优先级为从高到低依次为系统自带，grains文件配置，master grains. 
 \subsubsection{Pillar}
+
+% TODO pillar还没有好好学习整理，不知道下次又是啥时候整理了
 数据管理中心 Pillar
-Pillar 也是salt组件之一，叫数据管理中心，会经常配合states在大规模配置管理工作中使用它，pillar在saltstack中主要的作用就是存储和定义配置管理中需要的一些数据，比如软件版本号，用户名，密码等信息，它的定义存储格式跟grains类似，
-pillar 用来定位主机。 修改完pillar时需要刷新 salt '*' saltutil.refresh_pillar
+Pillar 也是salt组件之一，叫数据管理中心，或者说是配置管理中心。 会经常配合states在大规模配置管理工作中使用它，pillar在saltstack中主要的作用就是存储和定义配置管理中需要的一些数据，比如软件版本号，用户名，密码，配置等信息，它的定义存储格式跟grains类似，同样增加完pillar配置后需要刷新 salt '*' saltutil.refresh_pillar。 查看pillar salt '*' pillar.items 
+ 
+master 端配置文件中指定了pillar的文件存放位置，
+\begin{lstlisting}
+pillar_roots:
+ base:
+ - /srv/pillar
+\end{lstlisting}
 
-
-给minion指定他想要的数据，查看pillar salt '*' pillar.items 
-首先要把master里552行 改成True . pillar_opts: True 不过一般是不用于开启的。 
-master 配置文件中指定了pillar的文件位置放置地方，
-#pillar_roots:
-# base:
-# - /srv/pillar
-所以我们可以在这个文件下面新建几个文件
-[root@master-node1 pillar]# cat apache.sls
-{% if grains['os'] == 'CentOS' %}
-apache: httpd
-{% elif grains['os'] == 'Debian' %}
-apache: apache2
-{% endif%}
-
-[root@master_101 pillar]# cat packages.sls
-zabbix:
-package-name: zabbix
-version: 2.2.4
-[root@master_101 pillar]# cat services.sls
-zabbix:
-port: 10050
-user: admin
-[root@master_101 pillar]# cat top.sls
-base: #指定环境
-'*': # target
-- packages # 引用package.sls 或者packages/init.sls
-- services # 引用services.sls
-- apache
-# 然后便可以使用命令来查看pillar啦
-[root@master_101 pillar]# salt '*' pillar.item zabbix
+同状态模块一样，里面需要有top.sls指定入口文件，编写方式也一样。
 
 
 
@@ -144,9 +103,64 @@ grains 与 pillar的区别
 Grains	Minion端	静态数据	Minion启动时收集，也可以使用saltutil.sync_grans进行刷新	存储Mnion基本数据，比如用于匹配Minion,自身数据可以用来做资产管理等。
 Pillar	Master端	动态数据	在master端定义，指定给对应的minion，可以使用saltutil.refresh_pillar刷新	存储master指定的数据，只有指定的Minion可以看到。用于敏感数据保存
 
-===
+\subsection{远程执行}
+
+% TODO Target没有细化，salt命令没有讲清 
+%运程执行本意是讲 salt这个命令怎么用
+
+有时候仅需要使用salt运行简单的命令，可以使用cmd.run模块  \textbf{salt TARGET cmd.run 'w'}
+目标端 target 指定主机名，这里可以使用到正则匹配，grains匹配，pillar匹配，主要组，或者直接列出主机名，这里的匹配在top.sls也可以同样适用
+
+目标可以通过正则来匹配minion id. 或者用grains, pillar subnet/ip address, compound matching, node groups 来匹配
 
 
+管理对象 target
+saltstack系统中我们的管理对象叫作target,在master上我们可以采用不同的target 去管理不同的minion
+在target options下可以分很多种匹配方式
+
+分发文件
+1. salt-cp 批量分发文件 salt-cp 语法格式为
+salt-cp '*' [ options ] SOURCE DEST
+
+
+\subsection{jinja}
+
+
+%TODO jinja 应该再细化一下
+在编写状态文件的时候经常会引用变量，grains, pillar,这时候就需要使用jinja
+
+变量使用Grains: {{ grains[‘fqdn_ip4’] }}
+
+变量使用执行模块: {{ salt['network.hw_addr']('eth0') }}
+
+变量使用Pillar: {{ pillar[‘apache'][‘PORT'] }}
+
+jinja 模版来写keepalived的优写级
+
+\begin{lstlisting}
+{% if grains['fqdn']=='lb-node1.unixhot.com' %}
+- ROUTEID: HAPROXY_MASTER
+- STATEID: MASTER
+- PRIORITYID: 101
+{% elif grains['fqdn']=='lb-node2.unixhot.com' %}
+- ROUTEID: HAPROXY_BACKUP
+- STATEID: BACKUP
+- PRIORITYID: 100
+{% endif %}
+\end{lstlisting}
+
+\begin{lstlisting}
+{% set motd = ['/etc/motd'] %}
+{% if grains['os'] == 'Debian' %}
+  {% set motd = ['/etc/motd.tail', '/var/run/motd'] %}
+{% endif %}
+
+{% for motdfile in motd %}
+{{ motdfile }}:
+  file.managed:
+    - source: salt://motd
+{% endfor %}
+\end{lstlisting}
 
 \subsection{状态模块 state}
 
@@ -193,15 +207,18 @@ file_roots:
     - /srv/salt/prod/states
 \end{lstlisting}
 
-base, dev, prod表示环境，salt默认会去base环境下去找状态文件，假设把上面内容保存到/srv/salt/apache/init.sls, 要运行单个sls文件可以使用命令\textbf{salt '*' state.sls apache}运行，这里的apache,salt会去base环境下找apache.sls,如果没有，会继续找有没有目录apache,并且下面有init.sls，如果都没有则返回错误。
+base, dev, prod表示环境，salt默认会去base环境下去找状态文件，假设把上面内容保存到/srv/salt/apache/init.sls, 要运行单个sls文件可以使用命令\textbf{salt '*' state.sls apache}运行，这里的apache,salt会去base环境下找apache.sls,如果没有，会继续找有没有目录apache,并且下面有init.sls，如果都没有则返回错误。如果要运行/srv/salt/apache/install.sys 最后的状态文件变成  apache.install 既可
+
+
 
 当apache目录下有多个sls时，可以使用include apache.xxx 来引到当前文件中
 
 但是如果环境比较多，不同的主机运行不同的状态文件，你又不想一次次敲命令，又乱又容易弄错怎么办，这时候就出现top.sls，在整个salt状态文件里惟一，他定义了针对不同环境下不同主机运行不同的状态文件。默认放到base环境根目录下，也就是/srv/salt下。
 \begin{lstlisting}
 base:
-  '*':
+  'os:Fedora':
     - webserver
+    - match: grain
 dev:
   'dev-*':
     - vim
@@ -220,43 +237,27 @@ prod:
 \begin{description}
 \item{查看state模块} 'Minion' sys.list_state_modules
 \item{查看指定states(git)的所有functions} salt 'Minion' sys.list_state_functions git 
-\item{查看指定function的用法}salt 'Minion' sys.state_doc git.config
+\item{查看指定function的用法} salt 'Minion' sys.state_doc git.config
 \end{description}
 
-执行结果处理
-return组件可以理解为saltstack系统对执行minion返回后的数据进行存储或者返回给其他程序，
-salt 状态模块
-状态可以多次执行，
-
-
-/etc/http/conf/http.conf; # 文件名
-file.managed: # 模块.方法
-- source: salt://apache/http.conf
-- user: root
-- group: root
-- mode: 644
-- template: jinja
-- defaults:
-custom_var: "default value"
-other_var: 123
-{% if grains['os'] == 'Ubuntu' %}
-- context:
-custom_var: 'override'
-{% endif %}
 
 
 针对管理对象操作
 module 是我们日常使用saltstack最多的一个组件，是用于管理对象操作的，这也是saltstack通过push的方式管理的入口，比如管理日常简单的执行命令，查看包安装情况，查看服务运行情况等都是通过 module来实现的 
 
 
-这里为什么要加require？就是因为salt本身是并发的去处理任务，service和pkg有可能现时运行，这样有可能达不到预期结果，所以加着require做前后依赖。除require外，还有很多条件
+为什么要加require？就是因为salt本身是并发的去处理任务，service和pkg有可能现时运行，这样有可能达不到预期结果，所以加着require做前后依赖。除require外，还有很多条件
 
-1 我依赖谁 require
-2 我被谁依赖 require_in
-3 我监控谁 watch 监控某一个状态，如果状态变化 就做一些事
-4 被谁监控 watch_in
-5 我引用谁 include
-6 我扩展谁  extend
+require： 在执行这一步之前需要满足的东西都列在下面，不满足就不执行，可以依赖整个sls, {'require': [{"sls":"foo"},]},require_in 反过来被谁依赖
+
+watch 里面任何一个状态变化变触发，并不是所有的state都支持watch, service state能支持，watch_in被谁监控
+
+unless执行下面内容，如果结果为False才执行该state, {"unless":["rpm -q vim-enhanced","ls /usr/bin/vim"]}, onlyif 结果返回为True才执行该state
+
+ 
+onfail, 另一个state执行失败后执行这个， onchanges另一个state执行成功并且产生变化执行，prereq 被要求在xxx state之前执行， use 利用另一个state的参数，
+listen/listen_in 和watch/watch_in 类似在所有state最后执行， include 组合多个state, extend 对之前内容扩展， 
+
 
 \subsection{salt实践}
 
@@ -292,217 +293,9 @@ client_102:
 True
 \end{lstlisting}
 
-salt 远程执行
-目标(target)
-模块(module)
-返回(returnners)
-salt '*' test.ping # salt target module.method key（test模块里的ping方法）
-salt '*' cmd.run 'uptime'
-目标
-目标可以通过正则来匹配minion id. 或者用grains, pillar subnet/ip address, compound matching, node groups 来匹配
+使用salt-api
 
-
-管理对象 target
-saltstack系统中我们的管理对象叫作target,在master上我们可以采用不同的target 去管理不同的minion
-在target options下可以分很多种匹配方式
-
-
-
-
-===============================
-
-
-
-
-架构布署
-1。 系统初始化，
-2 功能模块
-3 业务模块
-jinjia棋版
-python的模版引擎，
-jinja 模版来写keepalived的优写级
-{% if grains['fqdn']=='lb-node1.unixhot.com' %}
-- ROUTEID: HAPROXY_MASTER
-- STATEID: MASTER
-- PRIORITYID: 101
-{% elif grains['fqdn']=='lb-node2.unixhot.com' %}
-- ROUTEID: HAPROXY_BACKUP
-- STATEID: BACKUP
-- PRIORITYID: 100
-{% endif %}
-
-
-salt实践
-分发文件
-1. salt-cp 批量分发文件 salt-cp 语法格式为
-salt-cp '*' [ options ] SOURCE DEST
-salt-cp -E '.*' [ options ] SOURCE DEST
-salt-cp -G 'os:Arch.*' [ options ] SOURCE DEST
-salt-cp -G 'roles:nginx' conf/nginx /etc/init.d/
-这样一条命令便可以把nginx文件分发到所有 roles中有nginx的服务器上
-2. 通过状态模块分发文件 在正式环境下不使用 * 在执行状态的时候在后面加上 test=True
-[root@test02 salt]# pwd
-/srv/salt
-[root@test02 salt]# ll conf/
-total 20
--rwxr-xr-x 1 root root 1712 May 11 17:45 nginx
--rw-r--r-- 1 root root 2037 May 11 17:26 nginx.conf
--rw-r--r-- 1 root root 10361 May 10 10:56 zabbix_agentd.conf
-[root@test02 salt]# cat nginx_conf.sls
-/usr/local/nginx/conf/nginx.conf:
-file.managed:
-- name: /usr/local/nginx/conf/nginx.conf
-- source: salt://conf/nginx.conf
-- user: root
-- group: root
-- mode: 644
-[root@test02 salt]# salt -G 'roles:nginx' state.sls nginx_conf
-如果分发文件里面的配置有一些是动态的，那么就需要使用 jinja 模版
-[root@test02 salt]# cat zabbix_agent.sls
-/etc/zabbix/zabbix_agentd.conf:
-file.managed:
-- name: /etc/zabbix/zabbix_agentd.conf
-- source: salt://conf/zabbix_agentd.conf
-- user: root
-- group: root
-- mode: 644
-- template: jinja
-- defaults:
-hostname: grains['fqdn']
-[root@test02 salt]# grep '^[a-Z]' conf/zabbix_agentd.conf
-PidFile=/var/run/zabbix/zabbix_agentd.pid
-LogFile=/var/log/zabbix/zabbix_agentd.log
-LogFileSize=0
-Server=10.51.48.249
-ServerActive=10.51.48.249:10051
-Hostname= {{ grains['fqdn'] }}
-Include=/etc/zabbix/zabbix_agentd.d/
-
-[root@test02 salt]# salt -G 'roles:nginx' state.sls zabbix_agent
-
-文件管理之为文件增加一些东西
-salt ‘*’ file.append /etc/hosts ‘this is add line’
-salt
-zeromq 消息队列
-状态不能回滚
-apache-install: #id 声明（在高级状态下id必须唯一）， name 声明
-1 安装软件包 pkg
-2 修改配置文件 file
-3 启动服务 service
-网络 系统 数据库 去计算 自动化 架构 安全
-一个id声明下面，状态模块不能重复使用
-common_packges:
-pkg.installed:
-- pkgs:
-- unzip
-- dos2unix
-- salt-minion: 2015.8.5-1.el6
-lamp-pkg:
-pkg.installed:
-- pkgs:
-- httpd
-- php
-- marriadh-server
-- php-mysql
-- php-cli
-- php-mbstring
-/etc/http/conf/http.conf:
-file.managed:
-- source: salt://apache/http.conf
-- user: root
-- group: root
-- mode: 644
-- template:jinja
-- defaults:
-php-config:
-file.managed:
-- name: /etc/php.ini
-- source: salt://files/php.ini
-- user: root
-- group: root
-- mode: 644
-php-config:
-file.managed:
-- name: /etc/my.cnf
-- source: salt://files/my.cnf
-- user: root
-- group: root
-- mode: 644
-
-如何编写sls技巧：
-1 按状态分类 如果单独使用，清晰
-2 按服务分类，可以被其他的sls include.
-jinja2
-{{% … %}}
-{{[ … ]}} 变量
-3 步走：
-1 告诉file模块， 你要使用jinja
-template: jinja
-2 你要列出参数列表
-* defaultes: PORT: 88  模板里面支持 salt grains pillar 进行赋值 salt 运程执行模块 {{ salt[‘network.hw_addr’](‘eth0’) }} {{ pillar[‘apache’]}} 
-1 系统初始化
-2 功能模块： 设置单独的目录 haproxy nginx php mysql memcached
-3 业务模块： 根据业务类型划分，例如web 服务，论坛，bbs
-干活： 1 salt环境配置
-开发，测试，（功能测试环境，性能测试环境） 预生产，生产
-base 基础环境
-init目录： 环境初始化 1 dns配置， 2 history记录时间， 3 记录命令操作 4 内核参数优化 5 安装yum仓库 6 安装zabbix-agent
-socket 网络套接字
-
-file.manage
-backup:minion
-会把minion文件备份到下面目录下
-/var/cache/salt/minion/file_baup/
-继续学习状态间关系
-1. unless
-2. onlyif
-把变量写到最上面，然后在下面引用
-{% set keepalived_tar= ‘keepalived-1.2.17.tar.gz’ %}
-name: {{ keepalived_tar }}
-session
-对于php程序来说，只要在../php/lib/php.ini文件里面配置即可session.save_handler = files【session存储形式—files或者memcache】；session.save_path = “tcp://IP:Port”【session的存储路径】，他的session默认是保存在/tmp目录下，但是我们将他们都挂载到后端的memcache内存缓存服务器中。
-例如：
-session.save_handler = memcache
-session.save_path = “tcp://127.0.0.1:11211” 或者”tcp://host1:port1?persistent=1&weight=2,tcp://host2:port2”
-对于java程序来说，一般的session共享也是有一个memcache服务，比较多的情况下使用程序来实现session共享，通过一个变量将session记下来，然后存到memcache里面，需要的时候在取。
-另外一般比较大的java程序一般都会使用cookie，将session存到客户端，这样情况下就不需要共享，只要我本地设置了cookie就可以了
-将nginx加到systemd服务中
-cat > /usr/lib/systemd/system/nginx.service << ‘EOF’
-[Unit]
-Description=nginx - high performance web server
-Documentation=http://nginx.org/en/docs/
-After=network.target remote-fs.target nss-lookup.target
-[Service]
-Type=forking
-PIDFile=/run/nginx.pid
-ExecStartPre=/usr/sbin/nginx -t -c /etc/nginx/nginx.conf
-ExecStart=/usr/sbin/nginx -c /etc/nginx/nginx.conf
-ExecReload=/bin/kill -s HUP 
-
-MAINPID 
-PrivateTmp=true
-[Install]
-WantedBy=multi-user.target
-EOF
-master_job_cache: mysql
-mysql.host: ‘192.168.56.11’
-mysql.user: ‘salt’
-mysql.pass: ‘salt@pw’
-mysql.db: ‘salt’
-mysql.port: 3306
-systemctl restart salt-master
-https://www.unixhot.com/docs/saltstack/ref/modules/all/salt.modules.saltutil.html#module-salt.modules.saltutil
-1 修改minion配置文件
-file-client ; local
-file_roots:
-piller_roots
-2 编写SLS
-3 salt-call –local sate.highstate
-https://www.unixhot.com/docs/saltstack/ref/netapi/all/salt.netapi.rest_cherrypy.html
-SALT-API
-1 https 证书
-2 配置证书
-3
+\begin{lstlisting}
 useradd -M -s /sbin/nologin saltapi
 passwd saltapi
 [root@linux-node1 /etc/pki/tls/certs]# make testcert
@@ -548,4 +341,5 @@ curl -k https://192.168.56.11:8000/ \
 -d tgt=’*’ \
 -d fun=’test.ping’
 https://github.com/binbin91/oms
+\end{lstlisting}
 

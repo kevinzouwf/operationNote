@@ -26,11 +26,18 @@ Plugin 'Valloric/YouCompleteMe'
 Plugin 'altercation/vim-colors-solarized'
 Plugin 'jnurmine/Zenburn'
 
-" latex
-"Plugin 'LaTeX-Suite-aka-Vim-LaTeX'
+Plugin 'vim-latex/vim-latex'
+"Plugin 'xuhdev/vim-latex-live-preview'
 call vundle#end()
 endif
 
+"autocmd filetype tex setl updatetime=1000
+"let g:livepreview_previewer = 'open -a Preview'
+"let g:livepreview_engine = 'xelatex' .  ''
+""let g:tex_flavor='latex'
+"autocmd filetype tex :LLPStartPreview
+"nmap <F6> :LLPStartPreview<CR>
+"imap <F6> <ESC>:LLPStartPreview<CR>
 "python with virtualenv support
 py << EOF
 import os
@@ -70,7 +77,6 @@ imap <C-S-Right> <ESC>:tabn<CR>
 map <C-S-Left> :tabp<CR>
 imap <C-S-Left> <ESC>:tabp<CR>
 
-"let g:tex_flavor='latex'
 "" simple recursive grep
 "" both recursive grep commands with internal or external (fast) grep
 "command! -nargs=1 RecurGrep lvimgrep /<args>/gj ./**/*.* | lopen | set nowrap
@@ -231,6 +237,21 @@ if has("autocmd")
 endif
 " save as sudo
 ca w!! w !sudo tee "%"
+
+" Zoom / Restore window.
+function! s:ZoomToggle() abort
+    if exists('t:zoomed') && t:zoomed
+        execute t:zoom_winrestcmd
+        let t:zoomed = 0
+    else
+        let t:zoom_winrestcmd = winrestcmd()
+        resize
+        vertical resize
+        let t:zoomed = 1
+    endif
+endfunction
+command! ZoomToggle call s:ZoomToggle()
+nnoremap <silent> <C-A> :ZoomToggle<CR>
 
 autocmd BufNewFile *.sh,*.py,*.rb exec ":call SetTitle()"
 function SetTitle()

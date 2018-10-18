@@ -1,0 +1,38 @@
+server {
+    listen 80;
+    root /data/pip;
+    server_name pip3.internal.pdmi.cn;
+    location ~ ^/packages/(.*)$ {
+            autoindex on;
+#           try_files /data/yum/pip/packages/$1 @pypicentral ;
+    }
+#    location @pypicentral {
+#           rewrite ^ http://pypi.python.org$uri redirect;
+#    }
+    access_log  /var/log/nginx/access_pip.log main;
+}
+ 
+ 
+(venv) [root@yw-dns-01 pip]# tree /data/pip
+/data/pip
+└── packages
+    └── pexpect
+        └── pexpect-3.3.tar.gz
+ 
+2 directories, 1 file
+ 
+然后如果要使用本地pip源就需要加配置
+ 
+ 
+(venv) [root@yw-dns-01 pip]# tree ~/.pip/
+/root/.pip/
+└── pip.conf
+ 
+0 directories, 1 file
+(venv) [root@yw-dns-01 pip]# cat ~/.pip/pip.conf
+[global]
+index-url = http://pip3.internal.pdmi.cn/packages
+ 
+[install]
+trusted-host=pip3.internal.pdmi.cn
+ 这样就搞定了。
