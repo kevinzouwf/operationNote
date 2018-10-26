@@ -1,25 +1,138 @@
-\chapter{elasticsearch}
-查看插件
+\chapter{elk 简单介绍}
+\section{elasticsearch}
+elasticsearch其功能主要用于存储与搜索
 curl-XGET 'http://localhost:9200/_nodes'
 
+删除日志， curl -XDELETE 127.0.0.1:9200/fudao_requestlog-2017.12.10
 
-\chapter{logstash}
+列出所有索引并显示状态与索引大小。 curl -XGET 10.9.199.212:9200/_cat/indices 
+\section{logstash}
+logstash 是一个轻量，开源的服务端数据处理管道，能够收集来自各种来源的数据，实时转换并将其发送到目标位置。其包含三个部分，input,filter,output,下面分三部分一一介绍
 
-详情请看插件
-https://www.elastic.co/guide/en/logstash/6.2/filter-plugins.html
-geoip
 
-bin/logstash-plugin install logstash-filter-geoip
+\subsection{输入input}
+采集各种样式、大小和来源的数据,数据往往以各种各样的形式，或分散或集中地存在于很多系统中。 Logstash 支持各种输入选择 ，可以在同一时间从众多常用来源捕捉事件,\href{https://www.elastic.co/guide/en/logstash/current/input-plugins.html}{支持的输入plugins},里面有各种详细介绍，这里就简单介绍一个用redis做为input的例子
 
-https://dev.maxmind.com/geoip/geoip2/geolite2/  下载GeoLite2 City maxmindDB 放到指定目录
+\begin{lstlisting}
+	input {
+    redis {
+        data_type => "pattern_channel"
+        key => "logstash-*"
+        host => "192.168.0.2"
+        port => 6379
+        threads => 5
+        type => "redis-test"
+    }
+}
 
-command 使用
-bin/logstash-plugin install logstash-output-exec
+\end{lstlisting}
 
+\subsection{过滤 filter}
+数据从源传输到存储库的过程中，Logstash 过滤器能够解析各个事件，识别已命名的字段以构建结构，并将它们转换成通用格式，以便更轻松、更快速地分析和实现商业价值。利用grok从非结构化数据中派生了结构，从IP地址破译出地理坐标，\href{https://www.elastic.co/guide/en/logstash/current/filter-plugins.html}{filter plugins}
+
+针对不同来源，不同类型数据做不同处理及输出，可以在input中增加type 这个字段,然后在filter,output的时候使用type这个字段来判断来源是什么，怎么处理，怎么输出。也可以使用input过来默认增加的字段来处理。
+
+在logstash里字段都需要使用 [fieldname]来进行处理，字段分为top-level(agent, ip, request, ua, response), nested filed(status, bytes, os)。在指定nested filed的时候可以[ua][os]
+\begin{lstlisting}
+	filter{
+     if[source]=~"ftp.log"{
+        grok{
+         match=>{
+                 "message"=>[
+                 "\[%{TIMESTAMP_ISO8601:timestamp}\] ALL AUDIT: User \[%{GREEDYDATA:userId}\]\ %{GREEDYDATA:var} \[%{HOSTNAME:ip}\] %{GREEDYDATA:event}.",
+                 "\[%{TIMESTAMP_ISO8601:timestamp}\] ALL AUDIT: User \[%{GREEDYDATA:userId}\]\ %{GREEDYDATA:event} \[%{GREEDYDATA:filename}\]."
+							]
+				}
+				
+				
+				if[event]=~"retrieving file"{
+						add_tag=>["Download"]
+					}else if["event"]=~"storing file"{
+						add_tag=>["Upload"]
+					}else if["event"]=~"has logged in"{
+						add_tag=>["Login"]			
+				}
+				add_tag=>["log_ftp"]
+			}
+			
+			}
+     }
+\end{lstlisting}
+
+在处理数据的时候经常会用到if判断，判断的表达式有， ==, !=, <, >, <=, >= ,正常 =~, !~, in, not in, and, or,nand, xor,   !意思是否定的意思, 多个表达试可以使用()括起来。
+\begin{lstlisting}
+
+if EXPRESSION {
+  ...
+} else if EXPRESSION {
+  ...
+} else {
+  ...
+}
+	
+\end{lstlisting}
+
+使用mutate来移除一个字段
+\begin{lstlisting}
+filter {
+  if [action] == "login" {
+    mutate { remove_field => "secret" }
+  }
+}
+\end{lstlisting}
+
+使用in判断,在add tag后， 可以使用 if "aaa" in [tags]来判断tags里是否有aaa
+
+\begin{lstlisting}
+filter {
+  if [foo] in [foobar] {
+    mutate { add_tag => "field in field" }
+  }
+  if [foo] in "foo" {
+    mutate { add_tag => "field in string" }
+  }
+  if "hello" in [greeting] {
+    mutate { add_tag => "string in field" }
+  }
+  if [foo] in ["hello", "world", "foo"] {
+    mutate { add_tag => "field in list" }
+  }
+  if [missing] in [alsomissing] {
+    mutate { add_tag => "shouldnotexist" }
+  }
+  if !("foo" in ["hello", "world"]) {
+    mutate { add_tag => "shouldexist" }
+  }
+}
+\end{lstlisting}
+
+\subsection{输出 output}
+尽管 Elasticsearch 是我们的首选输出方向，能够为我们的搜索和分析带来无限可能，但它并非唯一选择,比如exec,file,hadoop等，详见\href{https://www.elastic.co/guide/en/logstash/current/output-plugins.html}{output plugins}
+
+
+在output，也支持sprintf format，类似像统计一个状态数量便可以用到这个。平进经常用到的类似时间格式了，path => "/var/log/\%{type}.\%\{+yyyy.MM.dd.HH\}" 详细请参见\href{https://www.elastic.co/guide/en/logstash/current/event-dependent-configuration.html}{在配置中使用事件数据和字段}
+\begin{lstlisting}
 output {
+  statsd {
+    increment => "apache.%{[response][status]}"
+  }
+}
+\end{lstlisting}
+
+使用exec做为output,运行自定义脚本，需要先安装插件 \textit{ bin/logstash-plugin install logstash-output-exec}
+
+\begin{lstlisting}
+	output {
   if [type] == "abuse" {
     exec {
       command => "iptables -A INPUT -s %{clientip} -j DROP"
     }
   }
 }
+\end{lstlisting}
+
+如果要在logstash使用geoip 可以安装相应插件\textif{bin/logstash-plugin install logstash-filter-geoip}  并下载最新静态IP地址库到本地。https://dev.maxmind.com/geoip/geoip2/geolite2/  下载GeoLite2 City maxmindDB 放到指定目录
+
+\section{kibana}
+
+
