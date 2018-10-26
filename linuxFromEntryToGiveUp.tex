@@ -11,8 +11,9 @@
 \usepackage{underscore} 
 \usepackage{indentfirst}
 \setlength{\parindent}{2em}
-\lstset{ 
-	frame=shadowbox,
+\lstset{
+    frame=single, 
+%	frame=shadowbox,
 	numbers=left,
 	numberstyle=\tiny,
 	language=python,
@@ -42,6 +43,7 @@
 
 \usepackage{filecontents}
 \usepackage{biblatex}
+%\usepackage[sectionbib]{chapterbib}
 
 %\begin{filecontents}{mybib.bib}
 %@unpublished{Survey2014,
@@ -84,6 +86,13 @@ jenkins.等之类软件，用什么都不能说精，也不能说不会，昏昏
 
 \input{./salt-ansible/salt-ansible.tex}
 
+\input{migrations/migrations.tex}
+
+\input{redis/redis.tex}
+
+\input{elk/elk.tex}
+
+
 %\input{./linuxBasic/linuxBase.tex}
 
 \begin{thebibliography}{9}
@@ -107,6 +116,7 @@ Knuth: Computers and Typesetting,
 	\\\texttt{http://xstarcd.github.io/wiki/shell/exec_redirect.html}
 
 \end{thebibliography}
+
 
 
 \end{document}

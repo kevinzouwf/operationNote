@@ -1,0 +1,84 @@
+\chapter{资源迁移}
+
+\section{磁盘网络复制}
+
+dd是一个非常强大的命令，可以直接复制块文件，经常用于磁盘复制，其复制速度比一般copy,mv快的多。曾经使用此命令恢复引导分区。
+
+
+dd复制整个磁盘  dd if=/dev/sda of=/dev/sdb. 如果要通过网络把本地磁盘复制到另一端，可以这样 dd if=/dev/sda |ssh root@servername.net "dd of=/dev/sdb", 但是由于ssh是基于加密传输，传输速度会相当慢。但如果使用netcat，基于tcp sockets传输那传输数据。下面是有关基于ssh，nc压缩与不压缩数据的测试。传输的为10G的分区。
+
+\begin{tabular}{l|cc}
+ 	& Time Elapsed (Sec)	& Speed (MB/s) \\
+Over SSH	& 1787.4	& 6.1 \\
+Over Netcat (no compression) &	1622.4 & 	6.6 \\
+Over Netcat (bzip compression) &	 889.3	& 12.1 \\
+Over Netcat (16M block size + bzip)	 & 490.0 &	21.9 \\
+  \hline
+& Time Savings (Seconds) & 	Percentage Savings \\
+Over SSH &	- &	0\% \\
+vs Netcat (no compression)	& 165.0 &	9\% \\
+vs Netcat (bzip compression)	 & 898.1 &	50\% \\
+vs Netcat (16M block size + bzip) &	1297.3	& 73\% 
+\end{tabular}
+
+
+在服务端开始nc服务\textsl{nc -l 19000|bzip2 -d|dd bs=16M of=/dev/sdb}  在客户端开始向服务端传输数据 \textsl{dd bs=16M if=/dev/sda|bzip2 -c|nc serverB.example.net 19000}
+
+
+备份系统 sudo rsync -aAXv / --exclude={"/dev/*","/proc/*","/sys/*","/tmp/*","/run/*","/mnt/*","/media/*","/lost+found"} root@servername.net:/
+dd if=/dev/sda bs=1 count=2048|ssh root@servername.net "dd bs=1 of=/dev/sda"
+
+
+\section{磁盘扩容}
+
+有时候在针对磁盘分区的时会故意留下一部分空白分区，以供后来不同用途进行再分区挂载。但是当根分区磁盘不够用时，需要把空白分区容量部分分配给根，鉴于此可以使用下面方法扩展根分区。
+
+操作步骤
+以CentOS 6.5 64bit 50GB系统盘为例，root分区在最末尾分区(e.g: /dev/xvda1: swap,/dev/xvda2: root)的扩容场景。
+
+执行以下命令，查询当前弹性云服务器的分区情况。
+
+\begin{lstlisting}
+[root@sluo-ecs-5e7d ~]# parted -l /dev/xvda
+Model: Xen Virtual Block Device (xvd)
+Disk /dev/xvda: 53.7GB
+Sector size (logical/physical): 512B/512B
+Partition Table: msdos
+
+Number  Start   End     Size    Type     File system     Flags
+ 1      1049kB  4296MB  4295MB  primary  linux-swap(v1)
+ 2      4296MB  42.9GB  38.7GB  primary  ext4            boot
+[root@sluo-ecs-5e7d ~]# blkid
+
+/dev/xvda1: UUID="25ec3bdb-ba24-4561-bcdc-802edf42b85f" TYPE="swap" 
+/dev/xvda2: UUID="1a1ce4de-e56a-4e1f-864d-31b7d9dfb547" TYPE="ext4" 
+\end{lstlisting}
+
+安装growpart工具。yum install cloud-utils-growpart. 
+工具growpart可能集成在cloud-utils-growpart/cloud-utils/cloud-initramfs-tools/cloud-init包里，可以直接执行命令yum install cloud-*确保growpart命令可用即可。
+
+
+执行以下命令，使用工具growpart将第二分区的根分区进行扩容。
+
+\begin{lstlisting}{bash}
+[root@sluo-ecs-5e7d ~]# growpart /dev/xvda 2
+CHANGED: partition=2 start=8390656 old: size=75495424 end=83886080 new: size=96465599,end=104856255
+# 执行以下命令，检查在线扩容是否成功。
+[root@sluo-ecs-5e7d ~]# parted -l /dev/xvda
+Model: Xen Virtual Block Device (xvd)
+Disk /dev/xvda: 53.7GB
+Sector size (logical/physical): 512B/512B
+Partition Table: msdos
+
+Number  Start   End     Size    Type     File system     Flags
+ 1      1049kB  4296MB  4295MB  primary  linux-swap(v1)
+ 2      4296MB  53.7GB  49.4GB  primary  ext4            boot
+
+
+[root@sluo-ecs-a611 ~]# resize2fs -f /dev/xvda2
+resize2fs 1.42.9 (28-Dec-2013)
+Filesystem at /dev/xvda2 is mounted on /; on-line resizing required
+old_desc_blocks = 3, new_desc_blocks = 3
+\end{lstlisting}
+
+
