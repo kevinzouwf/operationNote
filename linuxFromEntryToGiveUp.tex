@@ -47,8 +47,6 @@
 %\usepackage[sectionbib]{chapterbib}
 
 
-
-
 \begin{document}
 
 \maketitle
@@ -64,14 +62,18 @@ jenkins.等之类软件，用什么都不能说精，也不能说不会，昏昏
 可谓一塌糊涂，这样下去无非是浪费时间，不如借此时机，把所学之事整理成成文，
 
 \part{linux 基础知识}
+
+在第一部门中先了解linux基础操作知识，他们包括系统知识，网络知识，
 \input{cobble/cobbler}
 \input{basic/basic}
 \input{migrations/migrations.tex}
 \input{network/network.tex}
-\input{redis/redis.tex}
+
 \input{vim/vim}
 \input{keepalivd/keepalived.tex}
 
+\part{存储与数据}
+\input{redis/redis.tex}
 \part{虚拟化}
 \input{kvm/kvm.tex}
 \input{docker/docker-kubernetes}
