@@ -1,0 +1,5 @@
+BOOTPROTO=none
+DEVICE=bond0.300
+ONBOOT=yes
+VLAN=yes
+BRIDGE=virbr300

@@ -1,0 +1,8 @@
+TYPE=Ethernet
+DEVICE=enp6s0f0
+NAME=enp6s0f0
+BOOTPROTO=none
+ONBOOT=yes
+USERCTL=no
+MASTER=bond0
+SLAVE=yes

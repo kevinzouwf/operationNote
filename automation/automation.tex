@@ -2,25 +2,19 @@
 服务器环境中要想保证其稳定运行，必不可少的便是标准化，自动化，设想任何一个运维人员都是上去手动修改主机配信息，一旦出故障，如果此运维人员还在职，且还记得修改过什么配置，还可以恢复回来，但恢复时长也相当长，这对IT管理造成相当大的困难，公司服务器标准化，自动化势在必行。
 \section{ansible}
 Ansible 基于python研发的自动化运维工具, ansible是无客户端也不需要启服务端工具,十分方便，主要基于openssl所以安全性也比较高，但是因为任务按队列依次执行,所以并没有saltsatck那样并发的快.特别是维护上百台机子后会感觉到明显慢很多。
-
-ansible core ： ansible 自身核心模块
-host inventory： 主机库，定义可管控的主机列表
-connection plugins： 连接插件，一般默认基于 ssh 协议连接
-modules：core modules ( 自带模块 ) 、 custom modules ( 自定义模块 )
-playbooks ：剧本，按照所设定编排的顺序执行完成安排任务
-
-收集配置文件
-
-ansible -i environments/fudao/hosts  account -m fetch -a 'dest=/data/yulei/ansible-auto/roles/fudao/files/ src=/data/soft/nginx_80/conf/vhost/account.conf'
-
-在play book里不仅可以指定vars变量，还可以指定vars 文件
-
-var files
-
+\begin{itemize}
+\item ansible core ： ansible 自身核心模块
+\item host inventory： 主机库，定义可管控的主机列表
+\item connection plugins： 连接插件，一般默认基于 ssh 协议连接
+\item modules：core modules ( 自带模块 ) 、 custom modules ( 自定义模块 )
+\item playbooks ：剧本，按照所设定编排的顺序执行完成安排任务
+\end{itemize}
+我们可以使用fetch模块来收集配置文件,在play book里不仅可以指定vars变量，还可以指定vars 文件, var files
+\begin{lstlisting}
 - hosts: myhosts
   vars_files:
     - default_step.yml
-
+\end{lstlisting}
 
 \section{salt}
 
@@ -294,52 +288,4 @@ True
 \end{lstlisting}
 
 使用salt-api
-
-\begin{lstlisting}
-useradd -M -s /sbin/nologin saltapi
-passwd saltapi
-[root@linux-node1 /etc/pki/tls/certs]# make testcert
-cd /etc/pki/tls/private
-openssl rsa -in localhost.key -out salt_nopass.key
-systemctl start salt-api
-pip install CherryPy==3.2.6
-[root@linux-node1 ~]# vim /etc/salt/master
-default_include: master.d/*.conf
-rest_cherrypy:
-host: 192.168.56.11
-port: 8000
-ssl_crt: /etc/pki/tls/certs/localhost.crt
-ssl_key: /etc/pki/tls/private/salt_nopass.key
-external_auth:
-pam:
-saltapi:
-- .*
-- ‘@wheel’
-- ‘@runner’
-[root@linux-node1 ~]# curl -k https://192.168.56.11:8000/login \ 
--H ‘Accept: application/x-yaml’ \
--d username=’saltapi’ \
--d password=’saltapi’ \
--d eauth=’pam’
-return:
-* eauth: pam expire: 1464663850.123221 perms: 
-    * .*
-    * ‘@wheel’
-    * ‘@runner’ start: 1464620650.123221 token: 785db9bc5e79dee828bfb1649bc49c59900e0ebf user: saltapi
-curl -k https://192.168.56.11:8000/minions/linux-node1.oldboyedu.com \ 
--H ‘Accept: application/x-yaml’ \
--H ‘X-Auth-Token: 785db9bc5e79dee828bfb1649bc49c59900e0ebf’ \
-curl -k https://192.168.56.11:8000/ \ 
--H ‘Accept: application/x-yaml’ \
--H ‘X-Auth-Token: 785db9bc5e79dee828bfb1649bc49c59900e0ebf’ \
--d client=’runner’ \
--d fun=’manage.status’
-curl -k https://192.168.56.11:8000/ \ 
--H ‘Accept: application/x-yaml’ \
--H ‘X-Auth-Token: 785db9bc5e79dee828bfb1649bc49c59900e0ebf’ \
--d client=’local’ \
--d tgt=’*’ \
--d fun=’test.ping’
-https://github.com/binbin91/oms
-\end{lstlisting}
 

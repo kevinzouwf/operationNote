@@ -1,0 +1,6 @@
+TYPE=Ethernet
+DEVICE=enp8s0
+NAME=enp8s0
+BOOTPROTO=none
+ONBOOT=yes
+BRIDGE=br0
