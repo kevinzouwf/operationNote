@@ -1,0 +1,463 @@
+\chapter{mysql基础知识}
+
+\section{什么是数据库}
+数据库（ database）就是一个存放数据的仓库，这个仓库是按照一定的数据结构（数据结构是指数据的组织形式或数据之间的联系）来组织、存储的，我们可以通过数据提供的多种方法来管理数据库里的数据。
+
+现在主流的数据库系统类型有网状数据库(Network Database). 关系数据库(Relational Database). 树状数据库(Hierarchical Database). 面向对象数据库(Object-oriented Database)。
+
+虽然网状数据库和层次数据库已经很好的解决了数据的集中和共享问题，但是在数据独立性和抽象级别上仍有很大欠缺。用户在对这两种数据库进行存取时，仍然需要明确数据的存储结构，支出存取路径。而关系数据库就可以较好的解决这些问题。
+
+关系数据库是建立在关系数据库模型基础上的数据库，借助于集合代数等概念和方法来处理数据库中的数据。目前主流的关系数据库有oracle. db2. sqlserver. sybase. mysql等。关系模型的基本数据结构是表，实体的信息在列和行（也称为元组）中进行描述，因此，“关系数据库” 的关系是指数据库中的各种表，一个关系是一系列元组. 关系数据库中所有关系必须满足某些基本规则。表有一个属性 键 ，键是用来唯一确定表中的每个元组，通过键来对多表数据联结或组合，键也可以用于创建索引的关键要素。 一个表可以有一个或者一组键 ，通过对这些关联的表格分类，合并，连接或选取等运算实现数据的管理 
+
+关系型数据库是一个二维的表格，市场占有量较大的为mysql, oracel。数据库互联网去给最常用的是mysql, 通过sql结构化查询语言来存取，管理数据。 在保持数据一致性方面很强(ACID理论)
+
+非关系型数据库也被称为 nosql数据库，not only sql. 去掉关系数据库的关系型特性。数据之间无关系，这样就非常容易扩展。也无形之间，在架构的层面上带来了可扩展的能力。具有数据量大，高性能，数据类型灵活等特性，
+
+nosql 不是否定关系数据库，而是作为关系 数据库的一个重要补充，NOSQL为了高性能，高并发而生，NOSQL典型产品memcached（纯内存）redis（持久化缓存）mongodb(面向文档)， HBASE
+
+非关系型数据库种类：
+
+key-value 存储数据库 键值数据库就类似传统语言中使用的哈希表，可以通key来添加，查询和删除数据，因为key主键访问，所以会获得很高的性能及扩展性。memcached , redis,(memcachedb,berkeley db)
+
+列存储数据库 列存储数据库将数据储存在列簇中，一个列族存储经常在一起查询相关数据CASSANDRA, HBase
+
+面向文档的数据库(document-oriented) mongodb.
+
+面向图形的数据库
+
+
+\section{关系型数据库RDBMS}
+
+关系数据库，是建立在关系数据库模型基础上的数据库，借助于集合代数等概念和方法来处理数据库中的数据，同时也是一个被组织成一组拥有正式描述性的表格，该形式的表格作用的实质是装载着数据项的特殊收集体，这些表格中的数据能以许多不同的方式被存取或重新召集而不需要重新组织数据库表格。关系数据库的定义造成元数据的一张表格或造成表格、列、范围和约束的正式描述。每个表格（有时被称为一个关系）包含用列表示的一个或更多的数据种类。 每行包含一个唯一的数据实体，这些数据是被列定义的种类。当创造一个关系数据库的时候，你能定义数据列的可能值的范围和可能应用于那个数据值的进一步约束。
+
+关系型数据库有三个广泛使用的关键词： 关系， 属性， 域， 
+
+关系（relation) 是一个由行和列组成的表。关系中的列称为属性(attribute), 而域刚是允许属性取值的集合。
+
+关系模型的基本数据结构是表，实体的信息在列和行（也称为元组）中进行描述，因此，“关系数据库” 的关系是指数据库中的各种表，一个关系是一系列元组. 关系数据库中所有关系必须满足某些基本规则。在二维表里，元组也称为记录。
+
+笛卡尔积中每一个元素（d1，d2，…，dn）叫作一个n元组（n-tuple）或简称元组。
+
+表中的列的顺序是无关紧要的，但表中的不能有相同的元组或行,每个元组包含每个属性的一个值,表有一个属性 键 ，键是用来唯一确定表中的每个元组，通过键来对多表数据联结或组合，键也可以用于创建索引的关键要素。 一个表可以有一个或者一组键 ， 
+
+SQL (structured query language) 是关系型数据进行定义和操作的语言方法，是大多数关系数据库管理系统扶持的工业标准。SQL 主要类型有
+
+DDL（数据定义语言(data definition laguage)） 用来建立和列改数据库的结构（例如表），以及定义和构造数据库模式CREATE ALTER DROP 
+
+DCL(data control language) 数据控制语言 GRANGT REVOKE COMMIT ROLLBACK, 用户 授权，权限回收，数据提交回
+
+DML (data manipulation language) 数据操作语言select insert, delete update对数据里的表里的数据进行操作
+
+
+规范化是分解和简化数据库的关系，以达到有效检索和维护数据的过程。规范化数据最好的理由是避免冗余，减少数据存储。不规范的设计数据会出现三种数据异常
+\begin{enumerate}
+	\item  更新异常，由于重复值问题，将无法更新某个属性出现的所胡重复数据
+	\item  插入异常：由于缺少其他信息块，因此妨碍插入特定数据，
+	\item  删除异常： 如果具有重复属性，可能会无意中丢失数据。
+\end{enumerate}
+
+这里就会用到范式。
+函数依赖(functional dependence) ：给定一个关系(表) R，如果在任一时刻，属性A的每个值与属性组B的一个给定值相关，则属性组B函数依赖于属性A。这就是说实体A决定了实体B的值。
+
+规范化便是将表简化成更简单的形式以消除不良的属性（数据异常与数据冗余）。规范化处理有几个简化的级别： 1NF 第一范式， 2NF 第二范式，3NF， 修正第三范式，第四范式，第五范式。
+\begin{description}
+	\item[1NF] 如果一个表中不包含任何重复的组，即对于做任意一行，任一列中都不应该具有多个值，刚满足1NF。即一个非规范化的表将包含一个或多个重复组。当一个表中的某个属性出现了多重值，那么就出现了重复组。
+\item[2NF] 如果一个表已经满足1NF且每个非键属性与主键完全函数依赖，那么该表满足2NF
+\item[3NF] 如果满足2NF且每个非键属性完全并直接依赖于主键，那么该表满足3NF修正的第三范式 BCNF 基于关系中存在的函数依赖>，如果每个决定因素都是一个主键，那么该关系称为满足BCNF
+\item[4NF] 多值依赖，满足BCNF 且不包含非平凡的多值依赖，则该关系称为4NF
+\item[5NF] 当一个关系分解成几个关系，子关系再被联结回来，不应该丢失任何元组称为无损联结依赖，5NF便是没有联结依赖的关系
+\end{description}
+
+
+
+\section{mysql安装}
+二进制安装在\url{https://dev.mysql.com/downloads/mysql/}下载
+
+\begin{lstlisting}
+# tar -zxvf mysql-5.7.12-linux-glibc2.5-x86_64.tar.gz
+# mv mysql-5.7.12-linux-glibc2.5-x86_64 /usr/local/mysql57
+# cd /usr/local/mysql57
+# ./bin/mysqld --defaults-file=/etc/my_5712.cnf --initialize --user=mysql
+or
+# ./bin/mysqld --datadir=/data/mysql/5712_test --basedir=/usr/local/mysql57 --initialize --user=mysql
+# chown -R mysql.mysql /data/mysql/5712_test
+# ./bin/mysqld_safe --defaults-file=/etc/my_5712.cnf &
+# ./bin/mysql -uroot -p -S mysql.sock
+mysql> alter user root@localhost identified by '123';
+\end{lstlisting}
+
+编译安装
+\begin{lstlisting}
+$ yum install -y ncurses-devel libaio-deve
+$ yum install cmake
+$ useradd mysql -s /sbin/nologin -M
+$ tar zxf mysql-5.5.32.tar.gz && cd mysql-5.5.32
+cmake . -DCMAKE_INSTALL_PREFIX=/application/mysql-5.5.32 \
+-DMYSQL_DATADIR=/application/mysql-5.5.32/data \
+-DMYSQL_UNIX_ADDR=/application/mysql-5.5.32/tmp/mysql.sock \
+-DDEFAULT_CHARSET=utf8 \
+-DDEFAULT_COLLATION=utf8_general_ci \
+-DEXTRA_CHARSETS=gbk,gb2312,utf8,ascii \
+-DENABLED_LOCAL_INFILE=ON \
+-DWITH_INNOBASE_STORAGE_ENGINE=1 \
+-DWITH_FEDERATED_STORAGE_ENGINE=1 \
+-DWITH_BLACKHOLE_STORAGE_ENGINE=1 \
+-DWITHOUT_EXAMPLE_STORAGE_ENGINE=1 \
+-DWITHOUT_PARTITION_STORAGE_ENGINE=1 \
+-DWITH_FAST_MUTEXES=1 \
+-DWITH_ZLIB=bundled \
+-DENABLED_LOCAL_INFILE=1 \
+-DWITH_READLINE=1 \
+-DWITH_EMBEDDED_SERVER=1 \
+-DWITH_DEBUG=0
+\end{lstlisting}
+
+授权
+\textit{GRANT SELECT, INSERT, UPDATE, DELETE ON *.* TO 'jeffrey'@'localhost' IDENTIFIED BY 'PASSWORD';}
+
+权限回收\textit{REVOKE INSERT ON *.* FROM 'jeffrey'@'localhost';}
+
+查看权限\textit{show grants for 'jeffrey'@'localhost';}
+
+\section{mysql密码修改与找回}
+改密码
+法一直接用mysqladmin来修改\textit{ mysqladmin -uroot -poldboy123 -S /data/3306/mysql.sock password 1234}
+
+法二 登录进去用update, \textit{ UPDATE mysql.user SET password=PASSWORD("1234") WHERE user='root' and host='localhost';}
+
+当密码忘记,修改密码，先杀掉mysql然后使用mysql_safe跳过授权表启动，再更改密码，重启
+\begin{lstlisting}
+mysqld_safe --defaults-file=/data/3308/my.cnf --skip-grant-tables
+mysql -S /data/3306/mysql.sock
+mysql> UPDATE mysql.user SET password=PASSWORD("1234") WHERE user='root' and host='localhost';
+flush privileges;
+\end{lstlisting}
+
+\section{mysql备份与恢复}
+目前备份的方案很多，有物理也有逻辑，
+\begin{itemize}
+\item mysqldump：属于逻辑备份，会存在锁表，但考虑到数据量比较大，锁表的时间会比较长，业务不允许，pass掉；
+\item xtrabackup：属于物理备份，不存在锁表，但考虑到2台DB使用的都是共享表空间，同时在业务B的数据库进行恢复时，一是时间比较长，二是数据肯定不正确，pass掉（测试过）；
+\item mydumper：属于逻辑备份，是一个多线程、高性能的数据逻辑备份、恢复的工具，且锁表的时间很短（40G数据，10分钟以内），同时会记录binlog file和pos，业务可以接受。
+\end{itemize}
+
+mydumper主要有如下特性：
+\begin{enumerate}
+\item 任务速度要比mysqldump快6倍以上；
+\item 事务性和非事务性表一致的快照（适用于0.2.2以上版本）；
+\item 快速的文件压缩；
+\item 支持导出binlog；
+\item 多线程恢复（适用于0.2.1以上版本）；
+\item 以守护进程的工作方式，定时快照和连续二进制日志（适用于0.5.0以上版本）。
+ \end{enumerate}
+
+mydumper安装
+\begin{lstlisting}
+# yum install glib2-devel zlib-devel pcre-devel mysql-devel
+# tar zxvf mydumper-0.6.2.tar.gz
+# cd mydumper-0.6.2
+# cmake .
+# make
+# make install	
+\end{lstlisting}
+
+备份
+\textit{ mydumper -h 10.137.143.151 -u backup -p backup2015 -B TaeOss -t 8 -o /data/rocketzhang}
+
+恢复
+\textit{ myloader -h 10.137.143.152 -u backup -p backup2015 -B TaeOss -t 8 -o -d /data/rocketzhang}
+ 
+\section{binlog 格式}
+mysql binlog三种模式及设置
+Row Level
+日志中会记录成每一行数据被修改的形式，然后在slave端再对相同的数据进行修改。
+
+优点：在row level模式下，binlog中可以不记录执行的sql语句的上下文相关的信息，仅仅只需要记录那一条记录被修改了，修改成什么样了。所以row level的日志内容会非常清楚的记录下每一行数据修改的细节，非常容易理解。
+
+而且不会出现某些特定情况下的存储过程、function，及trigger的调用和触发无法被正确复制的问题。
+
+缺点：row level下，所有执行的语句当记录到日志中的时候，都将以每行记录的修改来记录，这样可能会产生大量的日志内容，如：有这样一条update语句：
+update product set owner_member_id = ‘b’ where owner_member_id = ‘a’，执行之后，日志中记录的不是这条update语句所对应的事件（MySQL以 事件的形式来记录bin-log日志），而是这条语句所更新的每一条记录的变化情况，这样就记录成很多条记录被更新的很多个事件。
+自 然，bin-log日志的量就会很大。尤其是当执行alter table之类的语句的时候，产生的日志量是惊人的。
+因为MySQL对于alter table之类表结构变更语句的处理方式使整个表的每一条记录都需要变动，实际就是重建了整个表，改表的每一条记录都会被记录到日志中。
+
+Statement Level（默认）
+
+每一条会修改数据的SQL都会记录到master的bin-log中，slave在复制的时候SQL进程会解析成和原来master端执行过的相同的SQL来再次执行。
+
+优点：statement level下的优点首先就是解决了row level下的缺点，不需要记录每一行数据的变化，减少bin-log日志量，节约IO，提高性能。因为他只需要记录在Master上所有执行语句的细节，及执行语句时候的上下文的信息。
+
+缺点：由于它是记录的执行语句，所以，为了让这些语句在slave端也能正确执行，那么它还必须记录每条语句在执行时的一些相关信息，也就是上下文信息，以保证所有语句在slave端被执行时能够得到和在Master端执行时相同的结果。
+另外就是，由于MySQL现在发展比较快，很多的新功能不断的加入，使MySQL的复制遇到了不小的挑战，自然复制的时候涉及到越复杂的内容，bug也就越容易出现。
+在statement level下，目前一经发现的就有不少情况会造成MySQL的复制出现问题，如：sleep()函数在有些版本中就不能正确复制，在存储过程中使用了last_insert_id()函数，可能回事slave和master上得到不一致的id等等，由于row levell是基于每一行来记录的变化，所以不会出现类似的问题。
+
+Mixed
+
+实际就是前两种模式的结合。在Mixed模式下，MySQL会根据执行的每一条具体的SQL语句来区分对待记录的日志形式，也就是statement和row之间选择一种。
+新版中的statement level还是和以前一样，仅仅记录执行的语句。而新版MySQL对row level模式也被做了优化，并不是所有的修改都会以row level来记录，
+像遇到表结构变更的时候就会以statement模式来记录，如果SQL语句确实就是uodate或delete等修改数据的语句，那么还是会记录所有行的变更。
+
+\section{insert 技巧}
+方式1、 \textit{INSERT INTO t1(field1,field2) VALUE(v001,v002);   }    明确只插入一条Value
+
+方式2、\textit{ INSERT INTO t1(field1,field2) VALUES(v101,v102),(v201,v202),(v301,v302),(v401,v402);}
+在插入批量数据时方式2优于方式1.
+
+方式3.1、  \textit{INSERT INTO t2(field1,field2) SELECT col1,col2 FROM t1 WHERE ……}
+
+这里简单说一下，由于可以指定插入到talbe2中的列，以及可以通过相对较复杂的查询语句进行数据源获取，可能使用起来会更加的灵活一些，但我们也必须注意，我们在指定目标表的列时，一定要将所有非空列都填上，否则将无法进行数据插入，还有一点比较容易出错的地方就是，当我们写成如下简写格式：
+
+方式3.2、  \textit{INSERT INTO t2 SELECT id, name, address FROM t1}
+
+此时，我们如果略掉了目标表的列的话，则默认会对目标表的全部列进行数据插入，且SELECT后面的列的顺序 必须和目标表中的列的定义顺序完全一致 才能完成正确的数据插入，这是一个很容易被忽略的地方，值得注意。
+
+\section{partitions}
+分区表是独立的逻辑表，但底层是多个物理子表组成，实现分区代码实际上是对一组底层表的句柄对象（handler object） 的封装。
+对分区表请求，都会通过句柄对象转化成对存储引擎的接口调用。
+对sql层面来说是完全封装底层实现的黑盒子，对应用是透明的，但是从底层文件系统来看就很容易实现，每一个分区表都有一个使用\#分隔命名的表文件。
+INFORMATION_SCHEMA.PARTITIONS. 一个表最多只有1024个分区。
+分区表达式必须是整数，或者返回整数的表达式。
+如果分区字段中有主键或者唯一索引，那么所有主键列和唯一索引列必须包含进来。
+分区表中无法使用外键约束。
+
+\section{mysql slow log}
+MySQL慢日志想必大家或多或少都有听说，主要是用来记录MySQL中长时间执行（超过long_query_time 单位秒），同时examine的行数超过min_examined_row_limit ,影响MySQL性能的SQL语句，以便DBA进行优化。
+
+在MySQL中，如果一个SQL需要长时间等待获取一把锁，那么这段获取锁的时间并不算执行时间，当SQL执行完成，释放相应的锁，才会记录到慢日志中，所以MySQL的慢日志中记录的顺序和实际的执行顺序可能不大一样。
+
+在默认情况下，MySQL的慢日志记录是关闭的,我们可以通过将设置slow_query_log=1来打开MySQL的慢查询日志，通过slow_query_log_file=file_name来设置慢查询的文件名，如果文件名没有设置，他的默认名字为 host_name-slow.log。同时，我们也可以设置 log-output={FILE|TABLE}来指定慢日志是写到文件还是数据库里面（如果设置log-output=NONE，将不进行慢日志记录，即使slow_query_log=1）。
+
+MySQL的管理维护命令的慢SQL并不会被记录到MySQL慢日志中。常见的管理维护命令包括ALTER TABLE,ANALYZE TABLE, CHECK TABLE, CREATE INDEX, DROP INDEX, OPTIMIZE TABLE, 和REPAIR TABLE。如果希望MySQL的慢日志记录这类长时间执行的命令，可以设置log_slow_admin_statements 为1。
+
+通过设置log_queries_not_using_indexes=1，MySQL的慢日志也能记录那些不使用索引的SQL（并不需要超过long_query_time，两者条件满足一个即可）。但打开该选项的时候，如果你的数据库中存在大量没有使用索引的SQL，那么MySQL慢日志的记录量将非常大，所以通常还需要设置参数log_throttle_queries_not_using_indexes 。默认情况下，该参数为0，表示不限制，当设置改参数为大于0的值的时候，表示MySQL在一分钟内记录的不使用索引的SQL的数量，来避免慢日志记录过多的该类SQL.
+
+在MySQL 5.7.2 之后，如果设置了慢日志是写到文件里，需要设置log_timestamps 来控制写入到慢日志文件里面的时区（该参数同时影响general日志和err日志）。如果设置慢日志是写入到数据库中，该参数将不产生作用。
+
+Anemometer 是一个图形化显示从MySQL慢日志的工具。结合pt-query-digest，Anemometer可以很轻松的帮你去分析慢查询日志，让你很容易就能找到哪些SQL需要优化。
+
+\section{mysql多源复制}
+
+使用多源复制的考虑：
+\begin{enumerate}
+\item 灾备作用：将各个库汇总在一起，就算是其他库都挂了（整个机房都无法连接了），还有最后一个救命稻草；
+\item 备份：直接在这个从库中做备份，不影响线上的数据库；
+\item 减少成本：不需要每个库都做一个实例，也减少了DBA的维护成本；
+\item 数据统计：后期的一些数据统计，需要将所有的库汇总在一起。
+\end{enumerate}
+
+多源复制其实就是把不同mysql实例上不同库汇总到同一个mysql实例。多源复制是支持GTID和Binlog+Position，我这里是GTID复制。
+配置方式如下：首先需要修改配置文件在Master1和Master2上增加下面配置
+ \begin{lstlisting}
+#GTID
+gtid-mode = on
+binlog_gtid_simple_recovery=1
+enforce_gtid_consistency=1
+binlog_format = row
+skip_slave_start = 1
+log-bin = /data/mysql/mysql_3307/logs/binlog/mysql-bin
+  \end{lstlisting}
+然后在Slave端增加如下配置
+ \begin{lstlisting}
+#binlog
+binlog_format = row
+server-id = 1343307
+log-bin = /data/mysql/mysql_3307/logs/binlog/mysql-bin
+#GTID
+gtid-mode = on
+binlog_gtid_simple_recovery=1
+enforce_gtid_consistency=1
+
+master_info_repository=TABLE
+relay_log_info_repository=TABLE
+replicate_ignore_db=mysql
+skip_slave_start = 1
+ \end{lstlisting}
+ 
+CHANGE MASTER TO MASTER_HOST='192.168.2.210',
+MASTER_USER='repl',
+MASTER_PORT=3306,
+MASTER_PASSWORD='000000',
+MASTER_LOG_FILE='mysql-bin.000001',
+MASTER_LOG_POS=1 FOR CHANNEL 'master1';
+
+启动所有slave
+START SLAVE;
+
+启动单个slave
+START SLAVE FOR CHANNEL 'master1';
+
+\textit{select * from performance_schema.replication_connection_status\G}
+
+\section{同步错误}
+主从同步错误代码收集及跳过错误
+\textit{SET GLOBAL SQL_SLAVE_SKIP_COUNTER=1; START SLAVE; }
+
+或者直接在配置文件里把特定的错误跳过 slave-skip-errors = 1062
+
+\section{各种时间}
+关于mysql的Fetch Time 和 Duration Time, launch_time, query_time
+
+Fetch time - measures how long transferring fetched results take, which has nothing to do with query execution. I would not consider it as sql query debugging/optimization option since fetch time depends on network connection, which itself does not have anything to do with query optimization. If fetch time is bottleneck then more likely there's some networking problem.
+Note: fetch time may vary on each query execution.
+Duration time - is the time that query needs to be executed. You should try to minimize it when optimizing performance of sql query.
+ 
+其实说通俗一些，fetch time 就是数据在网络上传输花费的时间，duration time是sql真正执行的时间
+
+ innodb_buffer_pool_size 对fetch time还是蛮有影响的
+ 
+ \begin{tabular*}{\textwidth}{ll}
+                    Duration & Fetch \\
+353 row(s) returned 34.422 sec & 125.797 sec (8MB innodb buffer) \\
+353 row(s) returned 0.500 sec & 1.297 sec (1GB innodb buffer)
+ \end{tabular*}
+ 
+\textit{slow_launch_time}:
+Command-Line Format--slow_launch_time=\#System VariableNameslow_launch_timeVariable ScopeGlobalDynamic VariableYesPermitted ValuesTypeintegerDefault2
+If creating a thread takes longer than this many seconds, the server increments the Slow_launch_threadsstatus variable.
+
+如果创建线程需要比slow_launch_time更多的时间，服务器会增加Slow_launch_threads的状态变量。
+
+ \textit{Slow_launch_threads}:
+ The number of threads that have taken more than slow_launch_time seconds to create.
+创建时间超过slow_launch_time的线程个数。
+
+\textit{long_query_time}:
+Command-Line Format--long_query_time=\#System VariableNamelong_query_timeVariable ScopeGlobal, SessionDynamic VariableYesPermitted ValuesTypenumericDefault10Min Value0
+
+If a query takes longer than this many seconds, the server increments the Slow_queries status variable. If the slow query log is enabled, the query is logged to the slow query log file. This value is measured in real time, not CPU time, so a query that is under the threshold on a lightly loaded system might be above the threshold on a heavily loaded one. The minimum and default values of long_query_time are 0 and 10, respectively. The value can be specified to a resolution of microseconds. For logging to a file, times are written including the microseconds part. For logging to tables, only integer times are written; the microseconds part is ignored. 
+
+如果查询需要比long_query_time更多的时间，服务器会增加slow_queries的状态变量。如果启用了慢查询日志，则查询将记录到慢查询日志文件中。此值是实时测量的，而不是中央处理器的时间，所以一个在轻负载系统的阈值下的查询可能会高于重负载的系统的阈值。最小值和默认值long_query_time分别为0和10。该值可以精确到微秒。如果记录到文件中，时间包括微秒部分。如果记录到表，只有整数部分；微秒部分被忽略。
+
+\textit{Slow_queries}:
+The number of queries that have taken more than long_query_time seconds. This counter increments regardless of whether the slow query log is enabled.
+
+查询时间超过long_query_time 的查询数目，这个数值的增加与是否启动慢查询日志无关。
+
+\textit{wai_timeout}
+等待执行时间，超过后便与客户端断开连接
+
+\textit{interactive_timeout}
+
+interactive_timeout针对交互式连接，wait_timeout针对非交互式连接。所谓的交互式连接，即在mysql_real_connect()函数中使用了CLIENT_INTERACTIVE选项。
+
+   说得直白一点，通过mysql客户端连接数据库是交互式连接，通过jdbc连接数据库是非交互式连接
+     
+\section{mysql5.7新变化}
+
+\subsection{SQL MODE变化}
+\begin{itemize}
+\item 默认启用 STRICT_TRANS_TABLES 模式；
+\item 对 ONLY_FULL_GROUP_BY 模式实现了更复杂的特性支持，并且也被默认启用；
+\item 其他被默认启用的sql mode还有 NO_ENGINE_SUBSTITUTION；
+\end{itemize}
+对广大MySQL使用者而言，以往不是那么严格的模式还是很方便的，在5.7版本下可能会觉得略为不适，慢慢习惯吧。比如向一个20字符长度的VARCHAR列写入30个字符，在以前会自动截断并给个提示告警，而在5.7版本下，则直接抛出错误了。个人认为这倒是一个好的做法，避免各种奇葩的写法。
+
+其中5.7默认启用\textit{ NO_ZERO_IN_DATE,NO_ZERO_DATE},这里便不允许时间为零，'0000-00-00 00:00:00' 这样便不可以，因为时间的开始计算时间为1970-1-1 0:0:0,
+
+\subsection{online操作}
+优化online操作，例如修改buffer pool、修改索引名（非主键）、修改REPLICATION FILTER、修改MASTER而无需关闭SLAVE线程 等众多特性。
+
+可以在线修改buffer pool对DBA来说实在太方便了，实例运行过程中可以动态调整，避免事先分配不合理的情况，不过 innodb_buffer_pool_instances 不能修改，而且在 innodb_buffer_pool_instances 大于 1 时，也不能将 buffer pool 调整到 1GB 以内，需要稍加注意。
+
+如果是加大buffer pool，其过程大致是：
+1、以innodb_buffer_pool_chunk_size为单位，分配新的内存pages；
+2、扩展buffer pool的AHI(adaptive hash index)链表，将新分配的pages包含进来；
+3、将新分配的pages添加到free list中；
+
+如果是缩减buffer pool，其过程则大致是：
+1、重整buffer pool，准备回收pages；
+2、以innodb_buffer_pool_chunk_size为单位，释放删除这些pages（这个过程会有一点点耗时）；
+3、调整AHI链表，使用新的内存地址。
+
+实际测试时，发现在线修改 buffer poo 的代价并不大，SQL命令提交完毕后都是瞬间完成，而后台进程的耗时也并不太久。在一个并发128线程跑tpcc压测的环境中，将 buffer pool 从32G扩展到48G，后台线程耗时 3秒，而从 48G 缩减回 32G 则耗时 18秒，期间压测的事务未发生任何锁等待。
+
+\section{percona-toolkit工具包}
+ percona-toolkit工具包的使用教程之开发类工具
+\subsection{pt-duplicate-key-checker}
+功能为从mysql表中找出重复的索引和外键，这个工具会将重复的索引和外键都列出来，并生成了删除重复索引的语句，非常方便
+
+查看test数据库的重复索引和外键使用情况使用如下命令
+\textit{pt-duplicate-key-checker  --host=localhost --user=root --password=zhang@123  --databases=test}
+        
+\subsection{pt-online-schema-change}
+在alter操作更改表结构的时候不用锁定表，也就是说执行alter的时候不会阻塞写和读取操作，注意执行这个工具的时候必须做好备份，操作之前最好详细读一下官方文档http://www.percona.com/doc/percona-toolkit/2.1/pt-online-schema-change.html。
+
+工作原理是创建一个和你要执行alter操作的表一样的空表结构，执行表结构修改，然后从原表中copy原始数据到表结构修改后的表，当数据copy完成以后就会将原表移走，用新表代替原表，默认动作是将原表drop掉。在copy数据的过程中，任何在原表的更新操作都会更新到新表，因为这个工具在会在原表上创建触发器，触发器会将在原表上更新的内容更新到新表。如果表中已经定义了触发器这个工具就不能工作了。
+
+在线更改表的的引擎，这个尤其在整理innodb表的时候非常有用，示例如下：
+\textit{pt-online-schema-change --user=root --password=zhang@123 --host=localhost --lock-wait-time=120 --alter="ENGINE=InnoDB" D=test,t=oss_pvinfo2 --execute}
+
+在来一个范例，大表添加字段的，语句如下:
+\textit{pt-online-schema-change --user=root --password=zhang@123 --host=localhost --lock-wait-time=120 --alter="ADD COLUMN domain_id INT" D=test,t=oss_pvinfo2 --execute}
+
+\subsection{pt-query-advisor}
+
+根据一些规则分析查询语句，对可能的问题提出建议，这些评判规则大家可以看一下官网的链接：http://www.percona.com/doc/percona-toolkit/2.1/pt-query-advisor.html，这里就不详细列举了。那些查询语句可以来自慢查询文件、general日志文件或者使用pt-query-digest截获的查询语句。目前这个版本有bug，当日志文件非常大的时候会需要很长时间甚至进入死循环。
+
+\begin{lstlisting}
+pt-query-advisor /path/to/slow-query.log
+pt-query-advisor --type genlog mysql.log
+pt-query-digest --type tcpdump.txt --print --no-report | pt-query-advisor
+\end{lstlisting}
+ 
+\subsection{pt-show-grants}
+
+规范化和打印mysql权限，让你在复制、比较mysql权限以及进行版本控制的时候更有效率！
+
+查看指定mysql的所有用户权限：
+\textit{pt-show-grants --host='localhost' --user='root' --password='zhang@123'}
+
+查看执行数据库的权限：
+\textit{pt-show-grants --host='localhost' --user='root' --password='zhang@123' --database='hostsops'}
+
+查看每个用户权限生成revoke收回权限的语句：
+\textit{pt-show-grants --host='localhost' --user='root' --password='zhang@123' --revoke}
+ 
+\subsection{pt-upgrade}
+
+在多台服务器上执行查询，并比较有什么不同！这在升级服务器的时候非常有用，可以先安装并导数据到新的服务器上，然后使用这个工具跑一下sql看看有什么不同，可以找出不同版本之间的差异。
+
+比较文件中每一个查询语句在两个主机上执行的结果，并检查在每个服务器上执行的结果、错误和警告。
+
+只查看某个sql在两个服务器的运行结果范例：
+\textit{pt-upgrade h='localhost' h=192.168.3.92 --user=root --password=zhang@123 --query="select * from user_data.collect_data limit 5"}
+
+查看文件中的对应sql在两个服务器的运行结果范例：
+\textit{pt-upgrade h='localhost' h=192.168.3.92 --user=root --password=zhang@123  aaa.sql}
+
+查看慢查询中的对应的查询SQL在两个服务器的运行结果范例：
+\textit{pt-upgrade h='localhost' h=192.168.3.92 --user=root --password=zhang@123  slow.log}
+
+此外还可以执行compare的类型，主要包含三个query_times,results,warnings，比如下面的例子，只比较sql的执行时间
+\textit{pt-upgrade h=192.168.3.91 h=192.168.3.92 --user=root --password=zhang@123 --query="select * from user_data.collect_data" --compare query_times}
+
+\subsection{pt-table-checksum}
+相信很多人的线上都搭建了MySQL主从这样的框架，很多人只监控MySQL的从服务器Slave_IO和Slave_SQL这两个线程是否为YES，还有 Seconds_Behind_Master延迟大不大之类的一些信息。但他们是否定期的去检查MySQL主服务器的数据和从服务器的数据是否一致呢，数据一致性才是最重要的，有人很好奇的问，如果数据不一致，就肯定没有两个YES的出现啦，我想说，不一定的，因为当slave出现错误时，可以通过SET GLOBAL sql_slave_skip_counter = N来跳过错误，还有可以通过选项--slave-skip-errors=[error_code]来跳过错误代码，这样处理后Slave_IO和Slave_SQL状态依然为YES，但这个时候，数据可能就跟主库不一致了。下面和大家学习一个很不错的工具pt-table-checksum
+
+pt-table-checksum：MySQL复制完整性校验(这个工具的重点是找到有效数据的差异。如果任何数据是不同的，你可以用pt-table-sync解决问题。)
+
+
+\subsection{pt-table-sync}
+
+当检查到主从复制不一致时便可以使用pt-table-sync做表同步
+
+\begin{thebibliography}{99}
+\baselineskip=3.5mm
+\bibitem{innodb-recovery}
+\href{https://dev.mysql.com/doc/refman/5.6/en/forcing-innodb-recovery.html}{mysql表损坏后修复}
+\bibitem{pt-table-checksum}
+\href{https://segmentfault.com/a/1190000004309169}{ 生产环境使用 pt-table-checksum 检查MySQL数据一致性}
+\bibitem{udf-mysql-to-redis}
+\href{https://avnpc.com/pages/mysql-replication-to-redis-by-gearman}{udf实现mysql对redis的同步}
+\bibitem{死锁排查过程}
+\href{http://www.kissyu.org/2017/02/19/%E8%AE%B0%E5%BD%95%E4%B8%80%E6%AC%A1Mysql%E6%AD%BB%E9%94%81%E6%8E%92%E6%9F%A5%E8%BF%87%E7%A8%8B/}{死锁排错过程}
+\bibitem{user-variable}
+\href{https://dev.mysql.com/doc/refman/8.0/en/user-variables.html}{user-variables}
+\bibitem{system-variable}
+\href{https://dev.mysql.com/doc/refman/8.0/en/server-system-variables.html}{system-variable}
+\bibitem{percona-toolkit-doc}
+\href{https://www.percona.com/doc/percona-toolkit/3.0/index.html}{percona-toolkit doc}
+\bibitem{timestemp}
+\href{https://stackoverflow.com/questions/9192027/invalid-default-value-for-create-date-timestamp-field}{create-date-timestamp}
+\end{thebibliography}
+
