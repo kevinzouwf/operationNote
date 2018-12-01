@@ -4,14 +4,20 @@
 #     Email: j.k.yulei@gmail.com
 #     HomePage: www.gsandow.com
 # =====================================
-MYUSER=root
-MYPASS=623913
-DIR=/backup
-[ ! -d $DIR ] && mkdir $DIR
+USER=root
+PASSWD=123456
 SOCKET=/data/3306/mysql.sock
-MYCMD="mysql -u$MYUSER -p$MYPASS -S$SOCKET"
-MYDUMP="mysqldump -u$MYUSER -p$MYPASS -S$SOCKET"
-for database in `$MYCMD -e "show databases;"|egrep -v "Data|mysql|per|infor"`
+LOGIN="mysql -u$USER -p$PASSWD -S $SOCKET"
+DUMP="mysqldump -u$USER -p$PASSWD -S $SOCKET -x -B -F -R"
+DATABASE=$(mysql -u$USER -p$PASSWD -S $SOCKET -e "show databases;"|egrep -v 'chema|mysql|Database')
+
+for db in $DATABASE
 do
-$MYDUMP $database|gzip >/backup/${database}_$(date +%F).sql.gz
+ TABLE=$($LOGIN -e "use $db; show tables;"|sed '1d')
+ for tb in $TABLE
+ do
+ [ -d /server/backup/$db ] || mkdir -p /server/backup/$db
+ $DUMP $db $tb |gzip >/server/backup/$db/${db}_${tb}_$(date +%F).sql.gz
+ done
 done
+show tables from databases;

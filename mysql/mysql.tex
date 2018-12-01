@@ -167,7 +167,32 @@ mydumper安装
 恢复
 \textit{ myloader -h 10.137.143.152 -u backup -p backup2015 -B TaeOss -t 8 -o -d /data/rocketzhang}
  
-\section{binlog 格式}
+\section{mysql日志}
+
+\subsection{错误日志}
+MySQL的错误日志（error log）记录mysqld在启动/关闭/运行过程中遇到的错误信息；
+\subsection{普通查询日志}
+普通查询日志（general query log）：记录客户端连接信息和执行的 SQL语句信息； 
+
+\subsection{慢日志}
+记录执行时间超出指定值（ long_query_time）的SQL 语句；可以使用 \textit{mysqladmin -uroot -p123456 -S /data/3306/mysql.sock flush-log}  来刷新日志
+
+MySQL慢日志想必大家或多或少都有听说，主要是用来记录MySQL中长时间执行（超过long_query_time 单位秒），同时examine的行数超过min_examined_row_limit ,影响MySQL性能的SQL语句，以便DBA进行优化。
+
+在MySQL中，如果一个SQL需要长时间等待获取一把锁，那么这段获取锁的时间并不算执行时间，当SQL执行完成，释放相应的锁，才会记录到慢日志中，所以MySQL的慢日志中记录的顺序和实际的执行顺序可能不大一样。
+
+在默认情况下，MySQL的慢日志记录是关闭的,我们可以通过将设置slow_query_log=1来打开MySQL的慢查询日志，通过slow_query_log_file=file_name来设置慢查询的文件名，如果文件名没有设置，他的默认名字为 host_name-slow.log。同时，我们也可以设置 log-output={FILE|TABLE}来指定慢日志是写到文件还是数据库里面（如果设置log-output=NONE，将不进行慢日志记录，即使slow_query_log=1）。
+
+MySQL的管理维护命令的慢SQL并不会被记录到MySQL慢日志中。常见的管理维护命令包括ALTER TABLE,ANALYZE TABLE, CHECK TABLE, CREATE INDEX, DROP INDEX, OPTIMIZE TABLE, 和REPAIR TABLE。如果希望MySQL的慢日志记录这类长时间执行的命令，可以设置log_slow_admin_statements 为1。
+
+通过设置log_queries_not_using_indexes=1，MySQL的慢日志也能记录那些不使用索引的SQL（并不需要超过long_query_time，两者条件满足一个即可）。但打开该选项的时候，如果你的数据库中存在大量没有使用索引的SQL，那么MySQL慢日志的记录量将非常大，所以通常还需要设置参数log_throttle_queries_not_using_indexes 。默认情况下，该参数为0，表示不限制，当设置改参数为大于0的值的时候，表示MySQL在一分钟内记录的不使用索引的SQL的数量，来避免慢日志记录过多的该类SQL.
+
+在MySQL 5.7.2 之后，如果设置了慢日志是写到文件里，需要设置log_timestamps 来控制写入到慢日志文件里面的时区（该参数同时影响general日志和err日志）。如果设置慢日志是写入到数据库中，该参数将不产生作用。
+
+Anemometer 是一个图形化显示从MySQL慢日志的工具。结合pt-query-digest，Anemometer可以很轻松的帮你去分析慢查询日志，让你很容易就能找到哪些SQL需要优化。
+mysqlsla不仅仅可用来处理慢查询日志，也可以用来分析其它日志比如二进制日志，普通查询日志等等，其对sql语句的抽象功能非常实用，参数设定简练易用，很好上手。
+
+\subsection{binlog }
 mysql binlog三种模式及设置
 Row Level
 日志中会记录成每一行数据被修改的形式，然后在slave端再对相同的数据进行修改。
@@ -220,22 +245,99 @@ INFORMATION_SCHEMA.PARTITIONS. 一个表最多只有1024个分区。
 如果分区字段中有主键或者唯一索引，那么所有主键列和唯一索引列必须包含进来。
 分区表中无法使用外键约束。
 
-\section{mysql slow log}
-MySQL慢日志想必大家或多或少都有听说，主要是用来记录MySQL中长时间执行（超过long_query_time 单位秒），同时examine的行数超过min_examined_row_limit ,影响MySQL性能的SQL语句，以便DBA进行优化。
 
-在MySQL中，如果一个SQL需要长时间等待获取一把锁，那么这段获取锁的时间并不算执行时间，当SQL执行完成，释放相应的锁，才会记录到慢日志中，所以MySQL的慢日志中记录的顺序和实际的执行顺序可能不大一样。
 
-在默认情况下，MySQL的慢日志记录是关闭的,我们可以通过将设置slow_query_log=1来打开MySQL的慢查询日志，通过slow_query_log_file=file_name来设置慢查询的文件名，如果文件名没有设置，他的默认名字为 host_name-slow.log。同时，我们也可以设置 log-output={FILE|TABLE}来指定慢日志是写到文件还是数据库里面（如果设置log-output=NONE，将不进行慢日志记录，即使slow_query_log=1）。
+\section{mysql主从复制}
 
-MySQL的管理维护命令的慢SQL并不会被记录到MySQL慢日志中。常见的管理维护命令包括ALTER TABLE,ANALYZE TABLE, CHECK TABLE, CREATE INDEX, DROP INDEX, OPTIMIZE TABLE, 和REPAIR TABLE。如果希望MySQL的慢日志记录这类长时间执行的命令，可以设置log_slow_admin_statements 为1。
+\subsection{主从同步原理}
+mysql的主从复制是一个异步的复制过程（虽然一般情况下是实时同步的），数据库数据从一个mysql数据库（我们称之为master）复制到另一个mysql数据库（我们称之为slave）。在master与slave之间实现整个主从复制到的过程是由三个线程参与完成是，其中有两个线程（SQL线程和IO线程在slave端），另一个线程（IO线程）在mater端。
 
-通过设置log_queries_not_using_indexes=1，MySQL的慢日志也能记录那些不使用索引的SQL（并不需要超过long_query_time，两者条件满足一个即可）。但打开该选项的时候，如果你的数据库中存在大量没有使用索引的SQL，那么MySQL慢日志的记录量将非常大，所以通常还需要设置参数log_throttle_queries_not_using_indexes 。默认情况下，该参数为0，表示不限制，当设置改参数为大于0的值的时候，表示MySQL在一分钟内记录的不使用索引的SQL的数量，来避免慢日志记录过多的该类SQL.
+要实现mysql的主从复制，首先必须打开master端的binlog（Mysql_binxxxxxx）功能，否则无法实现主从复制。因为整个复制过程实际上就是slave从master端获取Binlog日志，然后再在slave自身上以相同顺序执行获得的binlog日志中所记录的各种操作。
 
-在MySQL 5.7.2 之后，如果设置了慢日志是写到文件里，需要设置log_timestamps 来控制写入到慢日志文件里面的时区（该参数同时影响general日志和err日志）。如果设置慢日志是写入到数据库中，该参数将不产生作用。
+mysql数据库支持单项双向链式级联等场景的复制，在复制过程中一台服务器充当主服务器（master）而一个或者多个其他服务器充当从服务器（slave）
 
-Anemometer 是一个图形化显示从MySQL慢日志的工具。结合pt-query-digest，Anemometer可以很轻松的帮你去分析慢查询日志，让你很容易就能找到哪些SQL需要优化。
+\subsection{半同步}
+半同步主要针对一主多从的生产环境为产生的。MySQL主从复制默认采用的是异步模式，异步模式，从库每次从主库读取binlog日志放到自己的relaylog里，但主库不会关心从库读取多少binlog这样就就不会影响主库的性能，但是当主库宕机，但是从库binglog读取差异很大从而导致数据差异很大。
+实时同步这样会影响主库的性能。半同步是一个中间产品，他的机制是采用的是实时同步加异步。主库等待从库响应回答，如果超时主库就才用异步同步，当规定时间响应采用同步。系统默认是10s ，mysql5.5 本身自带半同步插件。
 
-\section{mysql多源复制}
+安装mysql 半同步插件
+安装mysql半同插件， mysql5.5 已经自带这个插件
+1.    查看半同步插件的位置
+\begin{lstlisting}
+	
+
+mysql> show variables like 'plugin_dir';
++---------------+--------------------------------+
+| Variable_name | Value                          | 
++---------------+--------------------------------+
+| plugin_dir    | /application/mysql/lib/plugin/ | 
++---------------+--------------------------------+
+1 row in set (0.00 sec)
+[root@m01 /]# ll  /application/mysql/lib/plugin/ 
+-rwxr-xr-x 1 root root  13038 Dec 19 19:06 adt_null.so 
+-rwxr-xr-x 1 root root  24683 Dec 19 19:06 auth.so 
+-rwxr-xr-x 1 root root  12564 Dec 19 19:06 auth_socket.so 
+-rwxr-xr-x 1 root root  22977 Dec 19 19:06 auth_test_plugin.so 
+-rw-r--r-- 1 root root    227 Jul  2  2013 daemon_example.ini 
+drwxr-xr-x 2 root root   4096 Dec 19 19:24 debug 
+-rwxr-xr-x 1 root root 421101 Dec 19 19:02 ha_archive.so
+-rwxr-xr-x 1 root root  28380 Dec 19 19:06 libdaemon_example.so 
+-rwxr-xr-x 1 root root  17779 Dec 19 19:06 mypluglib.so 
+-rwxr-xr-x 1 root root  17567 Dec 19 19:06 qa_auth_client.so 
+-rwxr-xr-x 1 root root  23278 Dec 19 19:06 qa_auth_interface.so 
+-rwxr-xr-x 1 root root  12902 Dec 19 19:06 qa_auth_server.so 
+-rwxr-xr-x 1 root root 172984 Dec 19 19:06 semisync_master.so
+-rwxr-xr-x 1 root root  94098 Dec 19 19:06 semisync_slave.so 
+#on master side
+mysql>  install plugin rpl_semi_sync_master soname 'semisync_master.so';
+#on slave side
+mysql>  install plugin rpl_semi_sync_slave soname 'semisync_slave.so';
+#check install
+mysql> show plugins;
+\end{lstlisting}
+
+开启半同开关
+\begin{lstlisting}
+#on master side
+mysql> SET GLOBAL rpl_semi_sync_master_enabled = 1;
+ 
+mysql> SHOW VARIABLES LIKE 'rpl_semi_sync%';      
++------------------------------------+-------+
+| Variable_name                      | Value | 
++------------------------------------+-------+
+| rpl_semi_sync_master_enabled       | ON    | 
+| rpl_semi_sync_master_timeout       | 10000 | 
+| rpl_semi_sync_master_trace_level   | 32    | 
+| rpl_semi_sync_master_wait_no_slave | ON    | 
+
++------------------------------------+-------+
+#on slave side
+mysql> SET GLOBAL rpl_semi_sync_slave_enabled = 1;
+mysql> stop slave IO_THREAD;
+mysql> start slave IO_THREAD; 
+mysql> show status like 'Rpl_semi_sync%';
+\end{lstlisting}
+
+\subsection{双主}
+
+主从同步【主库】M需要增加的参数：
+\begin{lstlisting}
+auto_increment_increment      = 2 
+auto_increment_offset       = 1 
+log-slave-updates 
+log-bin 
+expire_logs_days = 7 
+\end{lstlisting}
+主从同步【从库】S需要增加的参数：
+\begin{lstlisting}
+auto_increment_increment      = 2 
+auto_increment_offset       = 2 
+log-bin = /data/3307/mysql-bin 
+log-slave-updates 
+expire_logs_days = 7 
+\end{lstlisting}
+
+\subsection{mysql多源复制}
 
 使用多源复制的考虑：
 \begin{enumerate}
@@ -288,11 +390,46 @@ START SLAVE FOR CHANNEL 'master1';
 
 \textit{select * from performance_schema.replication_connection_status\G}
 
-\section{同步错误}
+\subsection{同步错误}
 主从同步错误代码收集及跳过错误
 \textit{SET GLOBAL SQL_SLAVE_SKIP_COUNTER=1; START SLAVE; }
 
 或者直接在配置文件里把特定的错误跳过 slave-skip-errors = 1062
+
+\subsection{amoeba做读写分离}
+
+ Amoeba致力于分布式数据库前端物理层，它主要在应用层访问mysql时充当mysql路由功能，专注于分布式数据库代理层。具有切分数据库，负载均衡，高可用性，SQL过滤，读写分离，可路由关系的到目标数据库。
+
+切分（Sharding）并不是特定数据库产品所附属的功能，而是在具体技术细节之上的抽象处理。是水平扩展（Scale Out）的解决方案，主要目的是解决单节点数据库服务器的能力限制，以及整个应用其架构的可扩展性（Scalability）。
+
+切分主要有两种方式：水平切分（Horizental Sharding）和垂直切分（Vertical Sharding）。水平切分所指的是通过一系列的切分规则将数据水平分布到不同的DB或table中，在通过相应的DB路由 或者table路由规则找到需要查询的具体的DB或者table以进行Query操作，比如根据用户ID将用户表切分到多台数据库上。垂直切分指的是按业务、产品切分，将不同类型的数据且分到不同的服务器上，通过数据库代理疏通程序与多个数据库的通讯、降低应用的复杂度。
+
+读写分离简单的说是把对数据库读和写的操作分开对应不同的数据库服务器，这样能有效地减轻数据库压力，也能减轻io压力。主数据库提供写操作，从数据库提供读操作，这样既避免了主数据库服务器（Master）的过载，也有效地利用了从数据库服务器（Slave）的资源 
+
+但是amoeba不支持事务，不支持存储过程，暂不支持分库分表，amoeba目前只做到分数据库实例。每个被切分的节点需要保持数据库表结构一致
+
+目前要实现mysql的主从读写分离，主要有以下几种方案：
+1、  通过程序实现，网上很多现成的代码，比较复杂，如果添加从服务器要更改多台服务器的代码。
+
+2、  通过mysql-proxy来实现，由于mysql-proxy的主从读写分离是通过lua脚本来实现，目前lua的脚本的开发跟不上节奏，而写没有完美的现成的脚本，因此导致用于生产环境的话风险比较大，据网上很多人说mysql-proxy的性能不高。
+
+3、  自己开发接口实现，这种方案门槛高，开发成本高，不是一般的小公司能承担得起。
+
+4、  利用阿里巴巴的开源项目Amoeba来实现，具有负载均衡、高可用性、sql过滤、读写分离、可路由相关的query到目标数据库，并且安装配置非常简单。国产的开源软件，应该支持，目前正在使用，不发表太多结论，
+
+\subsubsection{Amoeba配置}
+1.	想象Amoeba作为数据库代理层，它一定会和很多数据库保持通信，因此它必须知道由它代理的数据库如何连接，比如最基础的：主机IP、端口、Amoeba使用的用户名和密码等等。这些信息存储在\$AMOEBA_HOME/conf/dbServers.xml中。
+
+2.	Amoeba为了完成数据切分提供了完善的切分规则配置，为了了解如何分片数据、如何将数据库返回的数据整合，它必须知道切分规则。与切分规则相关的信息存储在\$AMOEBA_HOME/conf/rule.xml中。
+
+3.	当我们书写SQL来操作数据库的时候，常常会用到很多不同的数据库函数，比如：UNIX_TIMESTAMP()、SYSDATE()等等。这些函数如何被Amoeba解析呢？\$AMOEBA_HOME/conf/functionMap.xml描述了函数名和函数处理的关系。
+
+4.	对\$AMOEBA_HOME/conf/rule.xml进行配置时，会用到一些我们自己定义的函数，比如我们需要对用户ID求HASH值来切分数据，这些函数在\$AMOEBA_HOME/conf/ruleFunctionMap.xml中定义。
+
+5.	Amoeba可以制定一些可访问以及拒绝访问的主机IP地址，这部分配置在\$AMOEBA_HOME/conf/access_list.conf中
+
+Amoeba允许用户配置输出日志级别以及方式，配置方法使用log4j的文件格式，文件是\$AMOEBA_HOME/conf/log4j.xml。
+
 
 \section{各种时间}
 关于mysql的Fetch Time 和 Duration Time, launch_time, query_time
