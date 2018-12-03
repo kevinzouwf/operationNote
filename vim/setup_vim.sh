@@ -7,5 +7,4 @@
 tar zxf vimconfig.tar.gz -C ~/
 ln -fs $(pwd)/vimrc ~/.vim/vimrc
 echo "dont forget to install / update YoucompleteMe"
-echo "https://github.com/j1z0/dotfiles.git"
 

@@ -1,5 +1,4 @@
 "vundle
-set rtp+=~/.vim/bundle/powerline/powerline/bindings/vim
 set nocompatible
 filetype off
 
@@ -7,7 +6,7 @@ set rtp+=~/.vim/bundle/Vundle.vim
 if !has("compatible")
 call vundle#begin()
 Plugin 'VundleVim/Vundle.vim'
-Plugin 'Lokaltog/powerline', {'rtp': '~/.vim/bundle/powerline/powerline/bindings/vim'}
+"Plugin 'Lokaltog/powerline', {'rtp': 'powerline/bindings/vim'}
 "filesystem
 Plugin 'scrooloose/nerdtree'
 Plugin 'Xuyuanp/nerdtree-git-plugin'
@@ -16,6 +15,12 @@ Plugin 'kien/ctrlp.vim' "search file <C-P>
 "python sytax checker
 Plugin 'nvie/vim-flake8'
 Plugin 'scrooloose/syntastic'
+
+"tagbar
+Plugin 'majutsushi/tagbar'
+
+" airline
+Plugin 'vim-airline/vim-airline'
 
 "auto-completion stuff
 Plugin 'Valloric/YouCompleteMe'
@@ -31,22 +36,43 @@ Plugin 'vim-latex/vim-latex'
 call vundle#end()
 endif
 
-"autocmd filetype tex setl updatetime=1000
-"let g:livepreview_previewer = 'open -a Preview'
-"let g:livepreview_engine = 'xelatex' .  ''
-""let g:tex_flavor='latex'
-"autocmd filetype tex :LLPStartPreview
-"nmap <F6> :LLPStartPreview<CR>
-"imap <F6> <ESC>:LLPStartPreview<CR>
 "python with virtualenv support
-py << EOF
-import os
+if !has("compatible")
+"python with virtualenv support
+py3 << EOF
+import os.path
 import sys
-if 'VIRTUAL_ENV' in os.environ:
+import vim
+if 'VIRTUA_ENV' in os.environ:
   project_base_dir = os.environ['VIRTUAL_ENV']
-  activate_this = os.path.join(project_base_dir, 'bin/activate_this.py')
+  sys.path.insert(0, project_base_dir)
+  activate_this = os.path.join(project_base_dir,'bin/activate_this.py')
   execfile(activate_this, dict(__file__=activate_this))
 EOF
+endif
+
+"airline
+let g:airline#extensions#tabline#enabled = 1
+let g:airline#extensions#tabline#show_splits = 1
+let g:airline#extensions#tabline#show_buffers = 1
+let g:airline#extensions#tabline#tab_nr_type = 1
+let g:airline#extensions#tabline#buffer_nr_show = 1
+"let g:airline#extensions#tabline#formatter = 'unique_tail'
+let g:airline#extensions#tabline#switch_buffers_and_tabs = 1
+let g:airline#extensions#tabline#left_sep = ' '
+let g:airline#extensions#tabline#left_alt_sep = '|'
+let g:airline_powerline_fonts = 1
+nnoremap <expr> <Leader>1 tweak#wtb_switch#key_leader_bufnum(1)
+nnoremap <expr> <Leader>2 tweak#wtb_switch#key_leader_bufnum(2)
+nnoremap <expr> <Leader>3 tweak#wtb_switch#key_leader_bufnum(3)
+nnoremap <expr> <Leader>4 tweak#wtb_switch#key_leader_bufnum(4)
+nnoremap <expr> <Leader>5 tweak#wtb_switch#key_leader_bufnum(5)
+nnoremap <expr> <Leader>6 tweak#wtb_switch#key_leader_bufnum(6)
+nnoremap <expr> <Leader>7 tweak#wtb_switch#key_leader_bufnum(7)
+nnoremap <expr> <Leader>8 tweak#wtb_switch#key_leader_bufnum(8)
+nnoremap <expr> <Leader>9 tweak#wtb_switch#key_leader_bufnum(9)
+
+
 
 filetype plugin indent on    " enables filetype detection
 let g:SimpylFold_docstring_preview = 1
@@ -89,9 +115,17 @@ imap <C-S-Left> <ESC>:tabp<CR>
 "nmap ,wr :RecurGrepFast <cword><CR>
 
 " set powerline
-let g:Powerline_symbols = 'fancy'
-set fillchars+=stl:\ ,stlnc:\
+"let g:pymcd_powerline="py3"
+"let g:powerline_pycmd = 'py3'
+"let g:Powerline_symbols = 'fancy'
+"set fillchars+=stl:\ ,stlnc:\
+"set guifont=Inconsolata\ for\ Powerline:h15
 
+set termencoding=utf-8
+
+"tagbar
+map <F2> :TagbarToggle<CR>
+let g:tagbar_auto_faocus =1
 
 call togglebg#map("<F5>")
 "colorscheme zenburn
@@ -104,33 +138,18 @@ else
   colorscheme zenburn
 endif
 
-nnoremap <F4> :YcmForceCompileAndDiagnostics<CR>
 
 "complete
+let g:ycm_server_python_interpreter='python3'
 let g:ycm_autoclose_preview_window_after_completion=1
 let mapleader=" "
+let g:ycm_log_level = 'debug'
+nnoremap <F4> :YcmForceCompileAndDiagnostics<CR>
 map <leader>g  :YcmCompleter GoToDefinitionElseDeclaration<CR> 
 
 "I don't like swap files
 set noswapfile
 
-"turn on numbering
-"set nu
-"set nocp
-
-if !has("compatible")
-"python with virtualenv support
-py << EOF
-import os.path
-import sys
-import vim
-if 'VIRTUA_ENV' in os.environ:
-  project_base_dir = os.environ['VIRTUAL_ENV']
-  sys.path.insert(0, project_base_dir)
-  activate_this = os.path.join(project_base_dir,'bin/activate_this.py')
-  execfile(activate_this, dict(__file__=activate_this))
-EOF
-endif
 
 
 "it would be nice to set tag files by the active virtualenv here
@@ -221,6 +240,7 @@ let g:NERDTreeIndicatorMapCustom = {
 "set paste
 set nosmartindent
 set noautoindent
+"set relativenumber
 set nu
 
 "if has('mouse')
@@ -239,19 +259,19 @@ endif
 ca w!! w !sudo tee "%"
 
 " Zoom / Restore window.
-function! s:ZoomToggle() abort
-    if exists('t:zoomed') && t:zoomed
-        execute t:zoom_winrestcmd
-        let t:zoomed = 0
-    else
-        let t:zoom_winrestcmd = winrestcmd()
-        resize
-        vertical resize
-        let t:zoomed = 1
-    endif
-endfunction
-command! ZoomToggle call s:ZoomToggle()
-nnoremap <silent> <C-A> :ZoomToggle<CR>
+"function! s:ZoomToggle() abort
+"    if exists('t:zoomed') && t:zoomed
+"        execute t:zoom_winrestcmd
+"        let t:zoomed = 0
+"    else
+"        let t:zoom_winrestcmd = winrestcmd()
+"        resize
+"        vertical resize
+"        let t:zoomed = 1
+"    endif
+"endfunction
+"command! ZoomToggle call s:ZoomToggle()
+"nnoremap <silent> <C-A> :ZoomToggle<CR>
 
 autocmd BufNewFile *.sh,*.py,*.rb exec ":call SetTitle()"
 function SetTitle()
@@ -271,8 +291,7 @@ function SetTitle()
 	call setline(5,"#     Email: j.k.yulei@gmail.com")
 	call setline(6,"#     HomePage: www.gsandow.com")
 	call setline(7,"# =====================================")
-        call append(line(".")+6, "") 
-   
-    endif                                                                                                                        
+        call append(line(".")+6, "")
+    endif
 endfunction
 autocmd BufNewFile * normal G
